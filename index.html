@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#5c3d2e">
+<title>Café da Manhã — Gestão</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#f7f5f0;--surface:#fff;--border:#e8e4dc;
+  --brown:#5c3d2e;--brown2:#7a5240;--cream:#c8a97e;--cream2:#f0e4cf;
+  --text:#1c1410;--text2:#6b5a4e;--text3:#a89080;
+  --ok:#2d6a4f;--err:#b83232;--warn:#8a6000;--r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Sora',system-ui,sans-serif;font-size:14px;min-height:100vh}
+
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:linear-gradient(160deg,#2c1a0e 0%,#5c3d2e 60%,#8b6347 100%)}
+.login-box{background:white;border-radius:20px;padding:44px 32px;max-width:400px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.3)}
+.login-icon{font-size:52px;margin-bottom:16px}
+.login-title{font-size:26px;font-weight:700;color:var(--brown);margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text3);margin-bottom:28px;font-weight:300}
+.login-field{margin-top:14px;text-align:left}
+.login-field label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px}
+.login-field input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:16px;color:var(--text);outline:none;background:var(--bg)}
+.login-field input:focus{border-color:var(--brown);background:white}
+.login-err{color:var(--err);font-size:12px;margin-top:8px;display:none}
+
+#app{display:none;min-height:100vh}
+header{background:var(--brown);color:white;padding:0 16px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:8px}
+.header-logo{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.header-logo span{font-size:22px}
+.header-right{display:flex;align-items:center;gap:10px}
+.user-chip{background:rgba(255,255,255,.15);padding:4px 12px;border-radius:20px;font-size:12px}
+.btn-logout{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:white;padding:5px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit}
+#sync-status{font-size:11px;color:rgba(255,255,255,.75)}
+@media(max-width:560px){#sync-status{display:none}}
+nav{background:white;border-bottom:1px solid var(--border);display:flex;padding:0 12px;overflow-x:auto;scrollbar-width:none;position:sticky;top:58px;z-index:99}
+nav::-webkit-scrollbar{display:none}
+nav button{background:none;border:none;font-family:inherit;font-size:13px;font-weight:500;color:var(--text2);padding:14px 14px;cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap}
+nav button.active{color:var(--brown);border-bottom-color:var(--brown);font-weight:600}
+main{max-width:900px;margin:0 auto;padding:20px 14px 60px}
+.section{display:none}.section.active{display:block}
+
+.card{background:white;border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:600;color:var(--brown);margin-bottom:16px}
+
+.fg{display:grid;gap:14px;margin-bottom:14px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:580px){.g2,.g3{grid-template-columns:1fr}}
+label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px}
+input,select{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:16px;padding:11px 14px;outline:none}
+input:focus,select:focus{border-color:var(--brown);background:white}
+input[readonly]{cursor:not-allowed}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 20px;border-radius:10px;border:none;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:focus-visible,nav button:focus-visible{outline:2px solid var(--cream);outline-offset:2px}
+.btn-primary{background:var(--brown);color:white}.btn-primary:hover{background:var(--brown2)}
+.btn-ghost{background:transparent;color:var(--text2);border:1.5px solid var(--border)}.btn-ghost:hover{color:var(--text)}
+.btn-danger{background:transparent;color:var(--err);border:1.5px solid transparent;padding:5px 10px;font-size:12px}.btn-danger:hover{border-color:var(--err)}
+.btn-edit{background:transparent;color:var(--text3);border:1.5px solid transparent;padding:5px 10px;font-size:12px}.btn-edit:hover{color:var(--brown)}
+.btn-sm{padding:8px 14px;font-size:12px}.btn-xs{padding:4px 10px;font-size:11px}
+
+.stats-grid{display:grid;gap:12px;margin-bottom:18px}
+.s4{grid-template-columns:repeat(4,1fr)}.s3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:640px){.s4,.s3{grid-template-columns:1fr 1fr}}
+.stat{background:white;border:1px solid var(--border);border-radius:var(--r);padding:16px 10px;text-align:center}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:500;color:var(--brown);word-break:break-word}
+.stat-label{font-size:11px;color:var(--text3);margin-top:4px;font-weight:500}
+
+.chart-wrap{position:relative;height:240px}
+.chart-wrap-sm{position:relative;height:230px}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.dash-grid .card{margin-bottom:0}
+@media(max-width:640px){.dash-grid{grid-template-columns:1fr}}
+
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;font-weight:600;color:var(--text3);padding:10px 12px;border-bottom:2px solid var(--border);white-space:nowrap}
+td{padding:11px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+
+.emp-chip{display:inline-block;background:var(--cream2);color:var(--brown);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px}
+.badge-fixo{background:#e8f5ee;color:#2d6a4f;border:1px solid #b0d8b8;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;display:inline-block}
+.badge-var{background:#fff4e6;color:#8a6000;border:1px solid #f0d080;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;display:inline-block}
+
+.val-preview{background:linear-gradient(135deg,var(--brown) 0%,var(--brown2) 100%);color:white;border-radius:12px;padding:16px 20px;margin-top:14px;display:none}
+.val-preview .total{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:500}
+.val-preview .detail{font-size:12px;opacity:.85;margin-top:4px}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:16px}
+.modal-bg.open{display:flex}
+.modal{background:white;border-radius:var(--r);padding:24px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:17px;font-weight:700;color:var(--brown);margin-bottom:18px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+
+.empty{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-icon{font-size:44px;margin-bottom:10px;opacity:.5}
+
+#toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,10px);background:var(--brown);color:white;border-radius:10px;padding:12px 20px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:all .25s;pointer-events:none;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.ok{background:var(--ok)}#toast.err{background:var(--err)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-icon">☕</div>
+    <div class="login-title">Café da Manhã</div>
+    <div class="login-sub">Gestão de entregas para empresas</div>
+    <div class="login-field"><label for="l-user">Usuário</label><input type="text" id="l-user" placeholder="seu usuário" autocomplete="username" autocapitalize="none"></div>
+    <div class="login-field"><label for="l-pass">Senha</label><input type="password" id="l-pass" placeholder="••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"></div>
+    <div class="login-err" id="l-err">Usuário ou senha incorretos.</div>
+    <button class="btn btn-primary" style="width:100%;margin-top:22px;padding:13px;font-size:15px" onclick="login()">Entrar</button>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="header-logo"><span>☕</span> Café da Manhã</div>
+    <div class="header-right">
+      <span id="sync-status"></span>
+      <span class="user-chip" id="user-chip"></span>
+      <button class="btn-logout" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <nav>
+    <button class="active" onclick="showTab('dashboard',this)">📊 Painel</button>
+    <button onclick="showTab('lancamento',this)">➕ Lançar</button>
+    <button onclick="showTab('historico',this)">📋 Histórico</button>
+    <button onclick="showTab('relatorio',this)">📄 Relatório</button>
+    <button onclick="showTab('empresas',this)">🏢 Empresas</button>
+    <button onclick="showTab('config',this)">⚙️ Config</button>
+  </nav>
+
+  <main>
+
+    <div class="section active" id="tab-dashboard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:18px;font-weight:700;color:var(--brown)">Painel</div>
+        <div style="display:flex;gap:8px">
+          <select id="dash-periodo" onchange="renderDashboard()" style="padding:7px 12px;font-size:13px;width:auto">
+            <option value="7">Últimos 7 dias</option>
+            <option value="30" selected>Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+            <option value="365">Últimos 12 meses</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="loadFromSheets(true)" aria-label="Atualizar">🔄</button>
+        </div>
+      </div>
+
+      <div class="stats-grid s4">
+        <div class="stat"><div class="stat-val" id="d-receita">—</div><div class="stat-label">Valor no período</div></div>
+        <div class="stat"><div class="stat-val" id="d-cafes">—</div><div class="stat-label">Cafés entregues</div></div>
+        <div class="stat"><div class="stat-val" id="d-dias">—</div><div class="stat-label">Dias com entrega</div></div>
+        <div class="stat"><div class="stat-val" id="d-empresas">—</div><div class="stat-label">Empresas atendidas</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Cafés por dia</div>
+        <div class="chart-wrap"><canvas id="chart-dias"></canvas></div>
+      </div>
+
+      <div class="dash-grid">
+        <div class="card">
+          <div class="card-title">Valor por empresa</div>
+          <div class="chart-wrap-sm"><canvas id="chart-empresas"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Ranking de empresas</div>
+          <div id="dash-top-empresas"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Últimas entregas</div>
+        <div id="dash-ultimas"></div>
+      </div>
+    </div>
+
+    <div class="section" id="tab-lancamento">
+      <div class="card">
+        <div class="card-title">☕ Nova entrega</div>
+        <div class="fg g2">
+          <div><label for="l-emp">Empresa</label><select id="l-emp" onchange="atualizarPreview()"><option value="">— selecione —</option></select></div>
+          <div><label for="l-data">Data</label><input type="date" id="l-data"></div>
+        </div>
+        <div class="fg g2">
+          <div><label for="l-qtd">Quantidade de cafés</label><input type="number" id="l-qtd" placeholder="0" min="1" inputmode="numeric" oninput="atualizarPreview()"></div>
+          <div id="l-valor-wrap"><label for="l-valor">Valor por café (R$)</label><input type="number" id="l-valor" placeholder="0,00" step="0.01" min="0" inputmode="decimal" oninput="atualizarPreview()"></div>
+        </div>
+        <div><label for="l-obs">Observação (opcional)</label><input type="text" id="l-obs" placeholder="Ex: incluiu suco, pedido especial..."></div>
+        <div class="val-preview" id="val-preview">
+          <div class="total" id="prev-total">R$ 0,00</div>
+          <div class="detail" id="prev-detail"></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px">
+          <button class="btn btn-ghost" onclick="limparForm()">Limpar</button>
+          <button class="btn btn-primary" onclick="lancar()">☕ Lançar entrega</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="tab-historico">
+      <div class="card">
+        <div class="fg g3" style="margin-bottom:10px">
+          <div><label for="f-emp">Empresa</label><select id="f-emp" onchange="renderHistorico()"><option value="">Todas</option></select></div>
+          <div><label for="f-de">De</label><input type="date" id="f-de" onchange="renderHistorico()"></div>
+          <div><label for="f-ate">Até</label><input type="date" id="f-ate" onchange="renderHistorico()"></div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="limparFiltros()">Ver tudo</button>
+      </div>
+      <div class="card" style="padding:0">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Empresa</th><th>Cafés</th><th>Valor unit.</th><th>Total</th><th>Obs.</th><th></th></tr></thead>
+            <tbody id="hist-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--text2)">
+        Total: <strong id="hist-t-cafes">0</strong> cafés • <strong id="hist-t-val">R$ 0,00</strong>
+      </div>
+    </div>
+
+    <div class="section" id="tab-relatorio">
+      <div class="card">
+        <div class="card-title">📄 Relatório para cobrança</div>
+        <div class="fg g3" style="margin-bottom:0">
+          <div><label for="r-de">Data início</label><input type="date" id="r-de"></div>
+          <div><label for="r-ate">Data fim</label><input type="date" id="r-ate"></div>
+          <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" style="width:100%" onclick="gerarRelatorio()">Ver relatório</button></div>
+        </div>
+      </div>
+      <div id="r-resultado" style="display:none">
+        <div class="stats-grid s3">
+          <div class="stat"><div class="stat-val" id="r-cafes">0</div><div class="stat-label">Total de cafés</div></div>
+          <div class="stat"><div class="stat-val" id="r-dias">0</div><div class="stat-label">Dias com entrega</div></div>
+          <div class="stat"><div class="stat-val" id="r-receita">R$ 0</div><div class="stat-label">Valor total</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Por empresa</div>
+          <div class="table-wrap">
+            <table><thead><tr><th>Empresa</th><th>Cafés</th><th>Valor médio</th><th>Total</th></tr></thead>
+            <tbody id="r-emp-body"></tbody></table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Cafés por dia</div>
+          <div class="chart-wrap"><canvas id="r-chart"></canvas></div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="exportarPDF()">⬇ Baixar PDF</button>
+          <button class="btn btn-ghost" onclick="compartilhar()">📤 Enviar resumo no WhatsApp</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" id="tab-empresas">
+      <div class="card">
+        <div class="card-title">➕ Nova empresa</div>
+        <div class="fg g2">
+          <div><label for="e-nome">Nome da empresa</label><input type="text" id="e-nome" placeholder="Ex: Tech Solutions Ltda"></div>
+          <div><label for="e-contato">Contato / responsável (opcional)</label><input type="text" id="e-contato" placeholder="Ex: João — (11) 99999-9999"></div>
+        </div>
+        <div class="fg g2">
+          <div><label for="e-tipo">Tipo de valor</label>
+            <select id="e-tipo" onchange="toggleValorFixo()">
+              <option value="fixo">Fixo (sempre o mesmo)</option>
+              <option value="variavel">Variável (lançado a cada entrega)</option>
+            </select>
+          </div>
+          <div id="e-val-wrap"><label for="e-val">Valor fixo por café (R$)</label><input type="number" id="e-val" placeholder="0,00" step="0.01" min="0" inputmode="decimal"></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" onclick="salvarEmpresa()">Salvar empresa</button></div>
+      </div>
+      <div id="emp-lista"></div>
+    </div>
+
+    <div class="section" id="tab-config">
+      <div class="card">
+        <div class="card-title">🔗 Planilha (onde os dados ficam guardados)</div>
+        <div id="cfg-status" style="font-size:13px;color:var(--text2);margin-bottom:12px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="testarConexao()">Testar conexão</button>
+          <button class="btn btn-ghost btn-sm" onclick="sincronizarAgora()">🔄 Sincronizar agora</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">👥 Usuários</div>
+        <div id="cfg-users" style="margin-bottom:16px"></div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Para trocar uma senha, digite o usuário existente e a senha nova.</p>
+        <div class="fg g3" style="margin-bottom:0">
+          <div><label for="cfg-user">Usuário</label><input type="text" id="cfg-user" placeholder="nome" autocapitalize="none"></div>
+          <div><label for="cfg-pass">Senha</label><input type="password" id="cfg-pass" placeholder="senha"></div>
+          <div style="display:flex;align-items:flex-end"><button class="btn btn-ghost" style="width:100%" onclick="addUsuario()">Salvar usuário</button></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">⬇ Exportar</div>
+        <button class="btn btn-ghost btn-sm" onclick="exportarCSV()">Baixar todas as entregas (Excel/CSV)</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <h2>Editar entrega</h2>
+    <input type="hidden" id="edit-id">
+    <div class="fg g2">
+      <div><label for="edit-emp">Empresa</label><select id="edit-emp"></select></div>
+      <div><label for="edit-data">Data</label><input type="date" id="edit-data"></div>
+      <div><label for="edit-qtd">Quantidade de cafés</label><input type="number" id="edit-qtd" min="1" inputmode="numeric"></div>
+      <div><label for="edit-valor">Valor por café (R$)</label><input type="number" id="edit-valor" step="0.01" inputmode="decimal"></div>
+    </div>
+    <div><label for="edit-obs">Observação</label><input type="text" id="edit-obs"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="fecharModal('editModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicao()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="empModal">
+  <div class="modal">
+    <h2>Editar empresa</h2>
+    <input type="hidden" id="em-id">
+    <div class="fg g2">
+      <div><label for="em-nome">Nome</label><input type="text" id="em-nome"></div>
+      <div><label for="em-contato">Contato</label><input type="text" id="em-contato"></div>
+      <div><label for="em-tipo">Tipo de valor</label>
+        <select id="em-tipo" onchange="document.getElementById('em-val-wrap').style.display=this.value==='fixo'?'block':'none'">
+          <option value="fixo">Fixo (sempre o mesmo)</option>
+          <option value="variavel">Variável (lançado a cada entrega)</option>
+        </select>
+      </div>
+      <div id="em-val-wrap"><label for="em-val">Valor fixo por café (R$)</label><input type="number" id="em-val" step="0.01" min="0" inputmode="decimal"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="fecharModal('empModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEmpresaEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIGURAÇÃO — URL do Apps Script (Implantar → App da Web)
+// ═══════════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyPyhXMtEOPr9d2v541NagDIOoGx1QiSEUG_Jr8I_0AVP4xI_BNHU1g2gxsdtd59moJlw/exec';
+
+const DB_KEY = 'cafedb_v3';
+const SESSAO_KEY = 'cafe_sessao';
+const USUARIOS_PADRAO = [
+  {user:'mae', pass:'cafe123', nome:'Mãe'},
+  {user:'pai', pass:'cafe123', nome:'Pai'},
+  {user:'andre', pass:'cafe123', nome:'André'}
+];
+
+let db = carregarLocal();
+let currentUser = null;
+let charts = {};
+let sincronizando = false;
+
+function carregarLocal() {
+  let d = null;
+  try {
+    d = JSON.parse(localStorage.getItem(DB_KEY) || 'null') || JSON.parse(localStorage.getItem('cafedb_v2') || 'null');
+  } catch(e) {}
+  d = d || {};
+  return {
+    lancamentos: (d.lancamentos || []).map(l => { const c = {...l}; delete c.syncado; return c; }),
+    empresas: d.empresas || [],
+    usuarios: (d.usuarios && d.usuarios.length) ? d.usuarios : USUARIOS_PADRAO.map(u => ({...u})),
+    fila: d.fila || [],
+    carregadoDoSheets: !!d.carregadoDoSheets
+  };
+}
+function salvar() { try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch(e) {} }
+function temSheets() { return SCRIPT_URL.startsWith('https://'); }
+
+// ═══════════════════════════════════
+// SINCRONIZAÇÃO COM A PLANILHA
+// Toda alteração entra numa fila salva no aparelho e só sai dela
+// quando a planilha confirma. Sem internet, nada se perde.
+// ═══════════════════════════════════
+async function chamarApi(action, dados) {
+  let r;
+  try { r = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ ...dados, action }) }); }
+  catch(e) { return 'rede'; }
+  try { const d = await r.json(); return d.ok ? 'ok' : 'erro'; }
+  catch(e) { return 'rede'; }
+}
+
+function enviar(action, dados) {
+  if (!temSheets()) return;
+  db.fila.push({ action, dados }); salvar(); atualizarStatus();
+  esvaziarFila();
+}
+
+async function esvaziarFila() {
+  if (!temSheets() || sincronizando || !db.fila.length) return;
+  sincronizando = true; atualizarStatus();
+  try {
+    while (db.fila.length) {
+      const op = db.fila[0];
+      const res = await chamarApi(op.action, op.dados);
+      if (res === 'rede') break;
+      if (res === 'erro') console.warn('Planilha recusou a operação:', op);
+      db.fila.shift(); salvar();
+    }
+  } finally { sincronizando = false; atualizarStatus(); }
+}
+
+async function loadFromSheets(feedback = false) {
+  if (!temSheets()) { if (feedback) toast('Planilha ainda não configurada', 'err'); atualizarStatus(); return false; }
+  await esvaziarFila();
+  if (db.fila.length) {
+    if (feedback) toast('Sem conexão — as alterações ficam guardadas e sobem depois', 'err');
+    return false;
+  }
+  try {
+    const r = await fetch(SCRIPT_URL + '?action=getAll');
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'erro');
+    const lanc = d.lancamentos || [], emps = d.empresas || [], users = d.usuarios || [];
+    if (!db.carregadoDoSheets) {
+      // Primeira conexão: sobe para a planilha o que existia só neste aparelho
+      const idsL = new Set(lanc.map(x => String(x.id)));
+      const idsE = new Set(emps.map(x => String(x.id)));
+      db.empresas.filter(e => !idsE.has(String(e.id))).forEach(e => { emps.push(e); db.fila.push({action:'saveEmpresa', dados:e}); });
+      db.lancamentos.filter(l => !idsL.has(String(l.id))).forEach(l => { lanc.push(l); db.fila.push({action:'saveLancamento', dados:l}); });
+    }
+    if (!users.length) {
+      db.usuarios.forEach(u => { users.push(u); db.fila.push({action:'saveUsuario', dados:u}); });
+    }
+    db.lancamentos = lanc; db.empresas = emps; db.usuarios = users;
+    db.carregadoDoSheets = true; salvar();
+    esvaziarFila();
+    if (currentUser) renderTudo();
+    if (feedback) toast('Dados atualizados ✓', 'ok');
+    return true;
+  } catch(e) {
+    if (feedback) toast('Não consegui falar com a planilha', 'err');
+    return false;
+  } finally { atualizarStatus(); }
+}
+
+function sincronizarAgora() { loadFromSheets(true); }
+
+async function testarConexao() {
+  if (!temSheets()) { toast('A URL da planilha ainda não foi colocada no app', 'err'); return; }
+  try {
+    const r = await fetch(SCRIPT_URL + '?action=ping');
+    const d = await r.json();
+    toast(d.ok ? 'Planilha conectada ✓' : 'Erro: ' + d.error, d.ok ? 'ok' : 'err');
+  } catch(e) { toast('Sem resposta da planilha', 'err'); }
+}
+
+function atualizarStatus() {
+  let txt;
+  if (!temSheets()) txt = '⚠ Planilha não configurada';
+  else if (sincronizando) txt = '⏳ Salvando...';
+  else if (db.fila.length) txt = `● ${db.fila.length} alteração(ões) aguardando internet`;
+  else txt = '✓ Tudo salvo na planilha';
+  const a = document.getElementById('sync-status'); if (a) a.textContent = txt;
+  const b = document.getElementById('cfg-status'); if (b) b.textContent = txt;
+}
+
+// ═══════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════
+function acharUsuario(u, p) {
+  return db.usuarios.find(x => String(x.user).toLowerCase() === u && String(x.pass) === p);
+}
+
+async function login() {
+  const u = document.getElementById('l-user').value.trim().toLowerCase();
+  const p = document.getElementById('l-pass').value;
+  let found = acharUsuario(u, p);
+  if (!found && temSheets()) { await loadFromSheets(false); found = acharUsuario(u, p); }
+  if (!found) { document.getElementById('l-err').style.display = 'block'; return; }
+  entrar(found);
+}
+
+function entrar(u) {
+  currentUser = u;
+  localStorage.setItem(SESSAO_KEY, u.user);
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-chip').textContent = u.nome || u.user;
+  init();
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem(SESSAO_KEY);
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('l-user').value = '';
+  document.getElementById('l-pass').value = '';
+  document.getElementById('l-err').style.display = 'none';
+}
+
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+function hoje() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function diasAtras(n) {
+  const d = new Date(); d.setDate(d.getDate() - n);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function inicioDoMes() { return hoje().slice(0,8) + '01'; }
+
+function init() {
+  document.getElementById('l-data').value = hoje();
+  ['f-de','r-de'].forEach(id => document.getElementById(id).value = inicioDoMes());
+  ['f-ate','r-ate'].forEach(id => document.getElementById(id).value = hoje());
+  renderTudo();
+  atualizarStatus();
+}
+
+function renderTudo() {
+  populateSelects();
+  renderDashboard();
+  renderHistorico();
+  renderEmpresas();
+  renderUsuarios();
+}
+
+function nomeDe(l) {
+  const e = db.empresas.find(x => String(x.id) === String(l.empresaId));
+  return e ? e.nome : (l.empresaNome || '—');
+}
+
+// ═══════════════════════════════════
+// TABS
+// ═══════════════════════════════════
+function showTab(name, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'historico') renderHistorico();
+  if (name === 'empresas') renderEmpresas();
+  if (name === 'config') { renderUsuarios(); atualizarStatus(); }
+}
+
+// ═══════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════
+function renderDashboard() {
+  const dias = parseInt(document.getElementById('dash-periodo').value);
+  const fromStr = diasAtras(dias);
+  const list = db.lancamentos.filter(l => l.data >= fromStr);
+
+  document.getElementById('d-receita').textContent = 'R$ ' + fmtVal(list.reduce((s,l) => s + Number(l.total), 0));
+  document.getElementById('d-cafes').textContent = list.reduce((s,l) => s + Number(l.qtd), 0);
+  document.getElementById('d-dias').textContent = new Set(list.map(l => l.data)).size;
+  document.getElementById('d-empresas').textContent = new Set(list.map(l => String(l.empresaId))).size;
+
+  const porDia = {};
+  list.forEach(l => { porDia[l.data] = (porDia[l.data] || 0) + Number(l.qtd); });
+  const ds = Object.keys(porDia).sort().slice(-31);
+  drawChart('chart-dias', 'bar', ds.map(fmtDateCurta), ds.map(d => porDia[d]), 'Cafés', '#5c3d2e');
+
+  const grupos = agruparPorEmpresa(list);
+  const cores = ['#5c3d2e','#8b6347','#c8a97e','#3d2820','#a8826a','#e8d5b7','#6b4a38','#d9bf99'];
+  drawChart('chart-empresas', 'doughnut', grupos.map(g => g.nome), grupos.map(g => g.total), 'Receita', cores);
+
+  const topEl = document.getElementById('dash-top-empresas');
+  if (!grupos.length) {
+    topEl.innerHTML = '<div class="empty" style="padding:20px">Sem entregas no período</div>';
+  } else {
+    const max = grupos[0].total || 1;
+    topEl.innerHTML = grupos.map(g => `
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;gap:8px">
+          <span style="font-weight:500">${esc(g.nome)}</span>
+          <span style="font-family:'JetBrains Mono',monospace;color:var(--brown);white-space:nowrap">R$ ${fmtVal(g.total)}</span>
+        </div>
+        <div style="background:var(--bg);border-radius:4px;height:6px;overflow:hidden">
+          <div style="background:var(--brown);height:100%;border-radius:4px;width:${(g.total/max*100).toFixed(1)}%"></div>
+        </div>
+      </div>`).join('');
+  }
+
+  const ults = [...db.lancamentos].sort((a,b) => b.data.localeCompare(a.data) || String(b.criadoEm).localeCompare(String(a.criadoEm))).slice(0,5);
+  const ultsEl = document.getElementById('dash-ultimas');
+  if (!ults.length) {
+    ultsEl.innerHTML = '<div class="empty" style="padding:20px"><div class="empty-icon">📭</div>Nenhuma entrega lançada ainda</div>';
+  } else {
+    ultsEl.innerHTML = ults.map(l => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:8px">
+        <div>
+          <span class="emp-chip">${esc(nomeDe(l))}</span>
+          <span style="font-size:12px;color:var(--text3);margin-left:8px">${fmtDate(l.data)}</span>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:'JetBrains Mono',monospace;font-weight:500">R$ ${fmtVal(l.total)}</div>
+          <div style="font-size:11px;color:var(--text3)">${l.qtd} café${l.qtd>1?'s':''}</div>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function agruparPorEmpresa(list) {
+  const g = {};
+  list.forEach(l => {
+    const k = String(l.empresaId);
+    if (!g[k]) g[k] = { id:k, nome:nomeDe(l), qtd:0, total:0 };
+    g[k].qtd += Number(l.qtd); g[k].total += Number(l.total);
+  });
+  return Object.values(g).map(x => ({ ...x, media: x.qtd ? x.total / x.qtd : 0 })).sort((a,b) => b.total - a.total);
+}
+
+function drawChart(id, type, labels, data, label, color) {
+  const canvas = document.getElementById(id); if (!canvas || typeof Chart === 'undefined') return;
+  if (charts[id]) charts[id].destroy();
+  const rosca = type === 'doughnut';
+  charts[id] = new Chart(canvas.getContext('2d'), {
+    type,
+    data: { labels, datasets: [{
+      label, data,
+      backgroundColor: rosca ? color : color + 'b3',
+      borderColor: rosca ? '#fff' : color,
+      borderWidth: rosca ? 2 : 1.5,
+      borderRadius: rosca ? 0 : 6
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: rosca, position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } },
+      scales: rosca ? {} : { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } }
+    }
+  });
+}
+
+// ═══════════════════════════════════
+// EMPRESAS
+// ═══════════════════════════════════
+function toggleValorFixo() {
+  document.getElementById('e-val-wrap').style.display = document.getElementById('e-tipo').value === 'fixo' ? 'block' : 'none';
+}
+
+function salvarEmpresa() {
+  const nome = document.getElementById('e-nome').value.trim();
+  if (!nome) { toast('Informe o nome da empresa', 'err'); return; }
+  const tipo = document.getElementById('e-tipo').value;
+  const val = parseFloat(document.getElementById('e-val').value) || 0;
+  if (tipo === 'fixo' && !val) { toast('Informe o valor fixo por café', 'err'); return; }
+  const emp = {
+    id: Date.now().toString(), nome,
+    contato: document.getElementById('e-contato').value.trim(),
+    tipoValor: tipo, valorFixo: tipo === 'fixo' ? val : 0
+  };
+  db.empresas.push(emp); salvar();
+  enviar('saveEmpresa', emp);
+  ['e-nome','e-contato','e-val'].forEach(id => document.getElementById(id).value = '');
+  renderTudo();
+  toast('Empresa cadastrada ✓', 'ok');
+}
+
+function populateSelects() {
+  ['l-emp','f-emp'].forEach(id => {
+    const el = document.getElementById(id); if (!el) return;
+    const cur = el.value;
+    el.innerHTML = id === 'f-emp' ? '<option value="">Todas</option>' : '<option value="">— selecione —</option>';
+    [...db.empresas].sort((a,b) => a.nome.localeCompare(b.nome)).forEach(e => {
+      const o = document.createElement('option');
+      o.value = e.id; o.textContent = e.nome;
+      if (String(e.id) === cur) o.selected = true;
+      el.appendChild(o);
+    });
+  });
+}
+
+function renderEmpresas() {
+  const el = document.getElementById('emp-lista');
+  if (!db.empresas.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🏢</div>Cadastre a primeira empresa acima</div>';
+    return;
+  }
+  el.innerHTML = [...db.empresas].sort((a,b) => a.nome.localeCompare(b.nome)).map(e => {
+    const doc = db.lancamentos.filter(l => String(l.empresaId) === String(e.id));
+    const total = doc.reduce((s,l) => s + Number(l.total), 0);
+    const cafes = doc.reduce((s,l) => s + Number(l.qtd), 0);
+    return `<div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding:16px 20px">
+      <div>
+        <div style="font-weight:600;font-size:14px;margin-bottom:4px">${esc(e.nome)}</div>
+        ${e.contato ? `<div style="font-size:12px;color:var(--text3);margin-bottom:6px">${esc(e.contato)}</div>` : ''}
+        <span class="${e.tipoValor==='fixo'?'badge-fixo':'badge-var'}">${e.tipoValor==='fixo' ? `R$ ${fmtVal(e.valorFixo)} por café` : 'Valor variável'}</span>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--brown);font-weight:500">R$ ${fmtVal(total)}</div>
+        <div style="font-size:12px;color:var(--text3)">${cafes} cafés no total</div>
+        <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">
+          <button class="btn btn-edit btn-xs" onclick="editarEmpresa('${e.id}')">✏️ Editar</button>
+          <button class="btn btn-danger btn-xs" onclick="removerEmpresa('${e.id}')">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editarEmpresa(id) {
+  const e = db.empresas.find(x => String(x.id) === String(id)); if (!e) return;
+  document.getElementById('em-id').value = e.id;
+  document.getElementById('em-nome').value = e.nome;
+  document.getElementById('em-contato').value = e.contato || '';
+  document.getElementById('em-tipo').value = e.tipoValor;
+  document.getElementById('em-val').value = e.valorFixo || '';
+  document.getElementById('em-val-wrap').style.display = e.tipoValor === 'fixo' ? 'block' : 'none';
+  document.getElementById('empModal').classList.add('open');
+}
+
+function salvarEmpresaEdit() {
+  const e = db.empresas.find(x => String(x.id) === document.getElementById('em-id').value); if (!e) return;
+  const nome = document.getElementById('em-nome').value.trim();
+  const tipo = document.getElementById('em-tipo').value;
+  const val = parseFloat(document.getElementById('em-val').value) || 0;
+  if (!nome) { toast('Informe o nome', 'err'); return; }
+  if (tipo === 'fixo' && !val) { toast('Informe o valor fixo', 'err'); return; }
+  e.nome = nome;
+  e.contato = document.getElementById('em-contato').value.trim();
+  e.tipoValor = tipo; e.valorFixo = tipo === 'fixo' ? val : 0;
+  salvar(); enviar('saveEmpresa', e);
+  fecharModal('empModal'); renderTudo();
+  toast('Empresa atualizada ✓', 'ok');
+}
+
+function removerEmpresa(id) {
+  const e = db.empresas.find(x => String(x.id) === String(id)); if (!e) return;
+  const temLanc = db.lancamentos.some(l => String(l.empresaId) === String(id));
+  const msg = temLanc
+    ? `Remover "${e.nome}"? As entregas já lançadas continuam no histórico.`
+    : `Remover "${e.nome}"?`;
+  if (!confirm(msg)) return;
+  db.empresas = db.empresas.filter(x => String(x.id) !== String(id));
+  salvar(); enviar('deleteEmpresa', { id: e.id });
+  renderTudo();
+  toast('Empresa removida', 'ok');
+}
+
+// ═══════════════════════════════════
+// LANÇAMENTO
+// ═══════════════════════════════════
+function atualizarPreview() {
+  const emp = db.empresas.find(e => String(e.id) === document.getElementById('l-emp').value);
+  const qtd = parseFloat(document.getElementById('l-qtd').value) || 0;
+  const valInp = document.getElementById('l-valor');
+  const wrap = document.getElementById('l-valor-wrap');
+  if (emp && emp.tipoValor === 'fixo') {
+    valInp.value = emp.valorFixo; valInp.readOnly = true; wrap.style.opacity = '.6';
+  } else {
+    valInp.readOnly = false; wrap.style.opacity = '1';
+  }
+  const vu = parseFloat(valInp.value) || 0;
+  const prev = document.getElementById('val-preview');
+  if (qtd > 0 && vu > 0) {
+    prev.style.display = 'block';
+    document.getElementById('prev-total').textContent = 'R$ ' + fmtVal(qtd * vu);
+    document.getElementById('prev-detail').textContent = `${qtd} cafés × R$ ${fmtVal(vu)}`;
+  } else { prev.style.display = 'none'; }
+}
+
+function lancar() {
+  const empId = document.getElementById('l-emp').value;
+  const data = document.getElementById('l-data').value;
+  const qtd = parseInt(document.getElementById('l-qtd').value);
+  const valorUnit = parseFloat(document.getElementById('l-valor').value);
+  if (!empId) { toast('Selecione a empresa', 'err'); return; }
+  if (!data) { toast('Informe a data', 'err'); return; }
+  if (!qtd || qtd < 1) { toast('Informe a quantidade de cafés', 'err'); return; }
+  if (!valorUnit || valorUnit <= 0) { toast('Informe o valor por café', 'err'); return; }
+  const emp = db.empresas.find(e => String(e.id) === empId);
+  const l = {
+    id: Date.now().toString(),
+    empresaId: empId, empresaNome: emp ? emp.nome : '',
+    data, qtd, valorUnit, total: Math.round(qtd * valorUnit * 100) / 100,
+    obs: document.getElementById('l-obs').value.trim(),
+    lancadoPor: currentUser.nome || currentUser.user,
+    criadoEm: new Date().toISOString()
+  };
+  db.lancamentos.push(l); salvar();
+  enviar('saveLancamento', l);
+  renderDashboard(); renderHistorico(); renderEmpresas();
+  toast(`☕ ${qtd} café${qtd>1?'s':''} lançado${qtd>1?'s':''} — R$ ${fmtVal(l.total)}`, 'ok');
+  limparForm();
+}
+
+function limparForm() {
+  ['l-emp','l-qtd','l-obs','l-valor'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('l-valor').readOnly = false;
+  document.getElementById('l-valor-wrap').style.opacity = '1';
+  document.getElementById('l-data').value = hoje();
+  document.getElementById('val-preview').style.display = 'none';
+}
+
+// ═══════════════════════════════════
+// HISTÓRICO
+// ═══════════════════════════════════
+function renderHistorico() {
+  const empF = document.getElementById('f-emp').value;
+  const de = document.getElementById('f-de').value;
+  const ate = document.getElementById('f-ate').value;
+  const list = db.lancamentos
+    .filter(l => (!empF || String(l.empresaId) === empF) && (!de || l.data >= de) && (!ate || l.data <= ate))
+    .sort((a,b) => b.data.localeCompare(a.data) || String(b.criadoEm).localeCompare(String(a.criadoEm)));
+  const body = document.getElementById('hist-body');
+  if (!list.length) {
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Nenhuma entrega neste período</td></tr>';
+  } else {
+    body.innerHTML = list.map(l => `<tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap">${fmtDate(l.data)}</td>
+      <td><span class="emp-chip">${esc(nomeDe(l))}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;text-align:center">${l.qtd}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap">R$ ${fmtVal(l.valorUnit)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:500;white-space:nowrap">R$ ${fmtVal(l.total)}</td>
+      <td style="font-size:12px;color:var(--text3)">${esc(l.obs) || '—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-edit btn-xs" onclick="abrirEdicao('${l.id}')">✏️</button>
+        <button class="btn btn-danger btn-xs" onclick="removerLanc('${l.id}')">✕</button>
+      </td></tr>`).join('');
+  }
+  document.getElementById('hist-t-cafes').textContent = list.reduce((s,l) => s + Number(l.qtd), 0);
+  document.getElementById('hist-t-val').textContent = 'R$ ' + fmtVal(list.reduce((s,l) => s + Number(l.total), 0));
+}
+
+function limparFiltros() {
+  ['f-emp','f-de','f-ate'].forEach(id => document.getElementById(id).value = '');
+  renderHistorico();
+}
+
+function removerLanc(id) {
+  if (!confirm('Remover esta entrega?')) return;
+  db.lancamentos = db.lancamentos.filter(l => String(l.id) !== String(id));
+  salvar(); enviar('deleteLancamento', { id });
+  renderHistorico(); renderDashboard(); renderEmpresas();
+  toast('Entrega removida', 'ok');
+}
+
+function abrirEdicao(id) {
+  const l = db.lancamentos.find(x => String(x.id) === String(id)); if (!l) return;
+  document.getElementById('edit-id').value = l.id;
+  document.getElementById('edit-data').value = l.data;
+  document.getElementById('edit-qtd').value = l.qtd;
+  document.getElementById('edit-valor').value = l.valorUnit;
+  document.getElementById('edit-obs').value = l.obs || '';
+  const sel = document.getElementById('edit-emp');
+  sel.innerHTML = '';
+  db.empresas.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.id; o.textContent = e.nome;
+    if (String(e.id) === String(l.empresaId)) o.selected = true;
+    sel.appendChild(o);
+  });
+  if (!db.empresas.some(e => String(e.id) === String(l.empresaId))) {
+    const o = document.createElement('option');
+    o.value = l.empresaId; o.textContent = (l.empresaNome || 'Empresa removida'); o.selected = true;
+    sel.appendChild(o);
+  }
+  document.getElementById('editModal').classList.add('open');
+}
+
+function salvarEdicao() {
+  const l = db.lancamentos.find(x => String(x.id) === document.getElementById('edit-id').value); if (!l) return;
+  const qtd = parseInt(document.getElementById('edit-qtd').value);
+  const vu = parseFloat(document.getElementById('edit-valor').value);
+  if (!qtd || qtd < 1 || !vu || vu <= 0) { toast('Confira quantidade e valor', 'err'); return; }
+  const empId = document.getElementById('edit-emp').value;
+  const emp = db.empresas.find(e => String(e.id) === empId);
+  l.empresaId = empId; l.empresaNome = emp ? emp.nome : l.empresaNome;
+  l.data = document.getElementById('edit-data').value;
+  l.qtd = qtd; l.valorUnit = vu; l.total = Math.round(qtd * vu * 100) / 100;
+  l.obs = document.getElementById('edit-obs').value.trim();
+  salvar(); enviar('saveLancamento', l);
+  fecharModal('editModal'); renderHistorico(); renderDashboard(); renderEmpresas();
+  toast('Entrega atualizada ✓', 'ok');
+}
+
+function fecharModal(id = 'editModal') { document.getElementById(id).classList.remove('open'); }
+
+// ═══════════════════════════════════
+// RELATÓRIO
+// ═══════════════════════════════════
+function listaRelatorio() {
+  const de = document.getElementById('r-de').value;
+  const ate = document.getElementById('r-ate').value;
+  return { de, ate, list: db.lancamentos.filter(l => l.data >= de && l.data <= ate) };
+}
+
+function gerarRelatorio() {
+  const { de, ate, list } = listaRelatorio();
+  if (!de || !ate) { toast('Selecione o período', 'err'); return; }
+  if (!list.length) { toast('Nenhuma entrega neste período', 'err'); document.getElementById('r-resultado').style.display = 'none'; return; }
+
+  document.getElementById('r-cafes').textContent = list.reduce((s,l) => s + Number(l.qtd), 0);
+  document.getElementById('r-dias').textContent = new Set(list.map(l => l.data)).size;
+  document.getElementById('r-receita').textContent = 'R$ ' + fmtVal(list.reduce((s,l) => s + Number(l.total), 0));
+
+  document.getElementById('r-emp-body').innerHTML = agruparPorEmpresa(list).map(g => `<tr>
+    <td><span class="emp-chip">${esc(g.nome)}</span></td>
+    <td style="font-family:'JetBrains Mono',monospace;text-align:center">${g.qtd}</td>
+    <td style="font-family:'JetBrains Mono',monospace;font-size:12px">R$ ${fmtVal(g.media)}</td>
+    <td style="font-family:'JetBrains Mono',monospace;font-weight:500">R$ ${fmtVal(g.total)}</td>
+  </tr>`).join('');
+
+  document.getElementById('r-resultado').style.display = 'block';
+  const porDia = {};
+  list.forEach(l => { porDia[l.data] = (porDia[l.data] || 0) + Number(l.qtd); });
+  const ds = Object.keys(porDia).sort();
+  drawChart('r-chart', 'bar', ds.map(fmtDateCurta), ds.map(d => porDia[d]), 'Cafés', '#5c3d2e');
+}
+
+function exportarPDF() {
+  if (!window.jspdf) { toast('Gerador de PDF não carregou — verifique a internet', 'err'); return; }
+  const { jsPDF } = window.jspdf;
+  const { de, ate, list } = listaRelatorio();
+  if (!list.length) { toast('Nenhuma entrega neste período', 'err'); return; }
+  const grupos = agruparPorEmpresa(list);
+  const doc = new jsPDF();
+  const W = doc.internal.pageSize.getWidth();
+
+  doc.setFillColor(92,61,46); doc.rect(0,0,W,38,'F');
+  doc.setTextColor(255,255,255); doc.setFontSize(18); doc.setFont('helvetica','bold');
+  doc.text('Relatório - Café da Manhã', 16, 20);
+  doc.setFontSize(10); doc.setFont('helvetica','normal');
+  doc.text(`Período: ${fmtDate(de)} a ${fmtDate(ate)}`, 16, 30);
+  doc.text(`Emitido em: ${fmtDate(hoje())}`, W-16, 30, {align:'right'});
+  let y = 50;
+
+  const totalCafes = list.reduce((s,l) => s + Number(l.qtd), 0);
+  const totalR = list.reduce((s,l) => s + Number(l.total), 0);
+  const dias = new Set(list.map(l => l.data)).size;
+  doc.setFillColor(247,245,240); doc.roundedRect(14,y,W-28,28,3,3,'F');
+  doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(92,61,46);
+  doc.text(String(totalCafes), 30, y+12);
+  doc.text(String(dias), W/2, y+12, {align:'center'});
+  doc.text(`R$ ${fmtVal(totalR)}`, W-30, y+12, {align:'right'});
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(120,100,90);
+  doc.text('Cafés entregues', 30, y+21);
+  doc.text('Dias com entrega', W/2, y+21, {align:'center'});
+  doc.text('Valor total', W-30, y+21, {align:'right'});
+  y += 42;
+
+  const cabecalho = (cols) => {
+    doc.setFillColor(92,61,46); doc.rect(14,y,W-28,8,'F');
+    doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont('helvetica','bold');
+    cols.forEach(([t,x,al]) => doc.text(t, x, y+5.5, al ? {align:al} : undefined));
+    y += 8;
+  };
+
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(92,61,46);
+  doc.text('Resumo por empresa', 14, y); y += 6;
+  cabecalho([['Empresa',18],['Cafés',W/2-10,'center'],['Valor médio',W/2+25,'center'],['Total',W-18,'right']]);
+  grupos.forEach((g,i) => {
+    if (y > 275) { doc.addPage(); y = 20; }
+    if (i%2===0) { doc.setFillColor(247,245,240); doc.rect(14,y,W-28,8,'F'); }
+    doc.setTextColor(30,20,16); doc.setFont('helvetica','normal');
+    doc.text(g.nome.slice(0,32), 18, y+5.5);
+    doc.text(String(g.qtd), W/2-10, y+5.5, {align:'center'});
+    doc.text(`R$ ${fmtVal(g.media)}`, W/2+25, y+5.5, {align:'center'});
+    doc.setFont('helvetica','bold'); doc.text(`R$ ${fmtVal(g.total)}`, W-18, y+5.5, {align:'right'});
+    y += 8;
+  });
+
+  y += 12;
+  if (y > 240) { doc.addPage(); y = 20; }
+  doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(92,61,46);
+  doc.text('Entregas detalhadas', 14, y); y += 6;
+  const cabDet = [['Data',18],['Empresa',46],['Cafés',W/2+18,'center'],['Valor unit.',W/2+42,'center'],['Total',W-18,'right']];
+  cabecalho(cabDet);
+  [...list].sort((a,b) => a.data.localeCompare(b.data)).forEach((l,i) => {
+    if (y > 278) { doc.addPage(); y = 20; cabecalho(cabDet); }
+    if (i%2===0) { doc.setFillColor(247,245,240); doc.rect(14,y,W-28,8,'F'); }
+    doc.setTextColor(30,20,16); doc.setFont('helvetica','normal');
+    doc.text(fmtDate(l.data), 18, y+5.5);
+    doc.text(nomeDe(l).slice(0,26), 46, y+5.5);
+    doc.text(String(l.qtd), W/2+18, y+5.5, {align:'center'});
+    doc.text(`R$ ${fmtVal(l.valorUnit)}`, W/2+42, y+5.5, {align:'center'});
+    doc.setFont('helvetica','bold'); doc.text(`R$ ${fmtVal(l.total)}`, W-18, y+5.5, {align:'right'});
+    y += 8;
+  });
+
+  const pages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i); doc.setFontSize(8); doc.setTextColor(160,144,128); doc.setFont('helvetica','normal');
+    doc.text(`Página ${i} de ${pages}`, W/2, 290, {align:'center'});
+  }
+  doc.save(`relatorio-cafe-${de}-a-${ate}.pdf`);
+  toast('PDF baixado ✓', 'ok');
+}
+
+function compartilhar() {
+  const { de, ate, list } = listaRelatorio();
+  if (!list.length) { toast('Nenhuma entrega neste período', 'err'); return; }
+  const total = list.reduce((s,l) => s + Number(l.total), 0);
+  let txt = `☕ *Relatório Café da Manhã*\n${fmtDate(de)} a ${fmtDate(ate)}\n\n`;
+  agruparPorEmpresa(list).forEach(g => { txt += `🏢 *${g.nome}*\n${g.qtd} cafés — R$ ${fmtVal(g.total)}\n\n`; });
+  txt += `*Total: R$ ${fmtVal(total)}*`;
+  if (navigator.share) navigator.share({ title: 'Relatório Café', text: txt }).catch(() => {});
+  else navigator.clipboard.writeText(txt).then(() => toast('Texto copiado — é só colar no WhatsApp', 'ok'));
+}
+
+// ═══════════════════════════════════
+// USUÁRIOS
+// ═══════════════════════════════════
+function addUsuario() {
+  const user = document.getElementById('cfg-user').value.trim().toLowerCase();
+  const pass = document.getElementById('cfg-pass').value;
+  if (!user || !pass) { toast('Informe usuário e senha', 'err'); return; }
+  const existente = db.usuarios.find(u => String(u.user).toLowerCase() === user);
+  if (existente) {
+    if (!confirm(`O usuário "${user}" já existe. Trocar a senha dele?`)) return;
+    existente.pass = pass; salvar(); enviar('saveUsuario', existente);
+    toast('Senha alterada ✓', 'ok');
+  } else {
+    const u = { user, pass, nome: user };
+    db.usuarios.push(u); salvar(); enviar('saveUsuario', u);
+    toast('Usuário adicionado ✓', 'ok');
+  }
+  document.getElementById('cfg-user').value = ''; document.getElementById('cfg-pass').value = '';
+  renderUsuarios();
+}
+
+function removerUsuario(user) {
+  if (currentUser && user === currentUser.user) { toast('Não dá para remover o usuário que está usando o app', 'err'); return; }
+  if (!confirm(`Remover o usuário "${user}"?`)) return;
+  db.usuarios = db.usuarios.filter(u => String(u.user) !== String(user));
+  salvar(); enviar('deleteUsuario', { user });
+  renderUsuarios();
+}
+
+function renderUsuarios() {
+  document.getElementById('cfg-users').innerHTML = db.usuarios.map(u => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:13px"><strong>${esc(u.nome || u.user)}</strong> <span style="color:var(--text3)">@${esc(u.user)}</span>${currentUser && u.user===currentUser.user ? ' <span style="font-size:10px;background:var(--cream2);color:var(--brown);padding:1px 8px;border-radius:10px">você</span>' : ''}</span>
+      ${currentUser && u.user!==currentUser.user ? `<button class="btn btn-danger btn-xs" onclick="removerUsuario('${esc(u.user)}')">✕</button>` : ''}
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════
+// CSV
+// ═══════════════════════════════════
+function exportarCSV() {
+  const h = 'data;empresa;cafes;valor_unit;total;obs;lancado_por\n';
+  const rows = [...db.lancamentos].sort((a,b) => a.data.localeCompare(b.data)).map(l =>
+    [fmtDate(l.data), nomeDe(l), l.qtd, fmtVal(l.valorUnit), fmtVal(l.total), l.obs || '', l.lancadoPor || '']
+      .map(v => `"${String(v).replace(/"/g,'""')}"`).join(';')
+  ).join('\n');
+  const blob = new Blob(['\ufeff' + h + rows], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `cafe-${hoje()}.csv`; a.click();
+  toast('Planilha exportada ✓', 'ok');
+}
+
+// ═══════════════════════════════════
+// UTILS
+// ═══════════════════════════════════
+function fmtVal(v) { return (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function fmtDate(d) { if (!d) return ''; const [y,m,day] = String(d).slice(0,10).split('-'); return day ? `${day}/${m}/${y}` : String(d); }
+function fmtDateCurta(d) { const [,m,day] = String(d).split('-'); return `${day}/${m}`; }
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast'); el.textContent = msg; el.className = `show ${type}`;
+  clearTimeout(window._tt); window._tt = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+// ═══════════════════════════════════
+// INÍCIO
+// ═══════════════════════════════════
+['editModal','empModal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => { if (e.target.id === id) fecharModal(id); });
+});
+window.addEventListener('online', () => esvaziarFila());
+setInterval(() => { if (currentUser && !document.hidden) loadFromSheets(false); }, 60000);
+
+(function boot() {
+  const s = localStorage.getItem(SESSAO_KEY);
+  const u = s && db.usuarios.find(x => String(x.user) === s);
+  if (u) entrar(u);
+  loadFromSheets(false);
+})();
+
+</script>
+</body>
+</html>
