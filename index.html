@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#5c3d2e">
+<title>Café da Manhã — Gestão</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#f7f5f0;--surface:#fff;--border:#e8e4dc;
+  --brown:#5c3d2e;--brown2:#7a5240;--cream:#c8a97e;--cream2:#f0e4cf;
+  --text:#1c1410;--text2:#6b5a4e;--text3:#a89080;
+  --ok:#2d6a4f;--err:#b83232;--warn:#8a6000;--r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Sora',system-ui,sans-serif;font-size:14px;min-height:100vh}
+
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;background:linear-gradient(160deg,#2c1a0e 0%,#5c3d2e 60%,#8b6347 100%)}
+.login-box{background:white;border-radius:20px;padding:44px 32px;max-width:400px;width:100%;text-align:center;box-shadow:0 32px 80px rgba(0,0,0,.3)}
+.login-icon{font-size:52px;margin-bottom:16px}
+.login-title{font-size:26px;font-weight:700;color:var(--brown);margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text3);margin-bottom:28px;font-weight:300}
+.login-field{margin-top:14px;text-align:left}
+.login-field label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px}
+.login-field input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:16px;color:var(--text);outline:none;background:var(--bg)}
+.login-field input:focus{border-color:var(--brown);background:white}
+.login-err{color:var(--err);font-size:12px;margin-top:8px;display:none}
+
+#app{display:none;min-height:100vh}
+header{background:var(--brown);color:white;padding:0 16px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:8px}
+.header-logo{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.header-logo span{font-size:22px}
+.header-right{display:flex;align-items:center;gap:10px}
+.user-chip{background:rgba(255,255,255,.15);padding:4px 12px;border-radius:20px;font-size:12px}
+.btn-logout{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:white;padding:5px 12px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit}
+#sync-status{font-size:11px;color:rgba(255,255,255,.75)}
+@media(max-width:560px){#sync-status{display:none}.user-chip{display:none}}
+nav{background:white;border-bottom:1px solid var(--border);display:flex;padding:0 12px;overflow-x:auto;scrollbar-width:none;position:sticky;top:58px;z-index:99}
+nav::-webkit-scrollbar{display:none}
+nav button{background:none;border:none;font-family:inherit;font-size:13px;font-weight:500;color:var(--text2);padding:14px 14px;cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap}
+nav button.active{color:var(--brown);border-bottom-color:var(--brown);font-weight:600}
+main{max-width:900px;margin:0 auto;padding:20px 14px 60px}
+.section{display:none}.section.active{display:block}
+
+.card{background:white;border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:600;color:var(--brown);margin-bottom:16px}
+
+.fg{display:grid;gap:14px;margin-bottom:14px}
+.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}
+@media(max-width:580px){.g2,.g3{grid-template-columns:1fr}}
+label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px}
+input,select{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:16px;padding:11px 14px;outline:none}
+input:focus,select:focus{border-color:var(--brown);background:white}
+input[readonly]{cursor:not-allowed}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 20px;border-radius:10px;border:none;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn:focus-visible,nav button:focus-visible{outline:2px solid var(--cream);outline-offset:2px}
+.btn-primary{background:var(--brown);color:white}.btn-primary:hover{background:var(--brown2)}
+.btn-ghost{background:transparent;color:var(--text2);border:1.5px solid var(--border)}.btn-ghost:hover{color:var(--text)}
+.btn-danger{background:transparent;color:var(--err);border:1.5px solid transparent;padding:5px 10px;font-size:12px}.btn-danger:hover{border-color:var(--err)}
+.btn-edit{background:transparent;color:var(--text3);border:1.5px solid transparent;padding:5px 10px;font-size:12px}.btn-edit:hover{color:var(--brown)}
+.btn-sm{padding:8px 14px;font-size:12px}.btn-xs{padding:4px 10px;font-size:11px}
+
+.stats-grid{display:grid;gap:12px;margin-bottom:18px}
+.s4{grid-template-columns:repeat(4,1fr)}.s3{grid-template-columns:repeat(3,1fr)}
+@media(max-width:640px){.s4,.s3{grid-template-columns:1fr 1fr}}
+.stat{background:white;border:1px solid var(--border);border-radius:var(--r);padding:16px 10px;text-align:center}
+.stat-val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:500;color:var(--brown);word-break:break-word}
+.stat-label{font-size:11px;color:var(--text3);margin-top:4px;font-weight:500}
+
+.chart-wrap{position:relative;height:240px}
+.chart-wrap-sm{position:relative;height:230px}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.dash-grid .card{margin-bottom:0}
+@media(max-width:640px){.dash-grid{grid-template-columns:1fr}}
+
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:11px;font-weight:600;color:var(--text3);padding:10px 12px;border-bottom:2px solid var(--border);white-space:nowrap}
+td{padding:11px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+
+.emp-chip{display:inline-block;background:var(--cream2);color:var(--brown);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px}
+.badge-fixo{background:#e8f5ee;color:#2d6a4f;border:1px solid #b0d8b8;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;display:inline-block}
+.badge-var{background:#fff4e6;color:#8a6000;border:1px solid #f0d080;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;display:inline-block}
+
+.val-preview{background:linear-gradient(135deg,var(--brown) 0%,var(--brown2) 100%);color:white;border-radius:12px;padding:16px 20px;margin-top:14px;display:none}
+.val-preview .total{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:500}
+.val-preview .detail{font-size:12px;opacity:.85;margin-top:4px}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:16px}
+.modal-bg.open{display:flex}
+.modal{background:white;border-radius:var(--r);padding:24px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto}
+.modal h2{font-size:17px;font-weight:700;color:var(--brown);margin-bottom:18px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+
+.empty{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-icon{font-size:44px;margin-bottom:10px;opacity:.5}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.chip{font-family:inherit;border:1.5px solid var(--border);background:white;color:var(--text2);border-radius:20px;padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer}
+.chip.on{background:var(--brown);border-color:var(--brown);color:white}
+.chip:focus-visible{outline:2px solid var(--cream);outline-offset:2px}
+.checks{display:flex;flex-wrap:wrap;gap:6px 16px;padding-top:8px}
+label.check{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:500;color:var(--text);margin:0;cursor:pointer}
+label.check input{width:18px;height:18px;padding:0;accent-color:var(--brown)}
+.subtotal{text-align:right;font-size:13px;color:var(--text2);padding:12px 4px 0}
+.acoes-rel{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px}
+.badge-prod{background:var(--cream2);color:var(--brown);border:1px solid #e0c9a4;font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;display:inline-block}
+.hint{font-size:11px;color:var(--text3);margin-top:4px;min-height:14px}
+.link-btn{background:none;border:none;color:var(--brown);font-family:inherit;font-size:11px;font-weight:600;text-decoration:underline;cursor:pointer;padding:0;margin-left:6px}
+select:disabled{opacity:.7;cursor:not-allowed}
+.preview-lote{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--text2);line-height:1.6;margin-top:14px}
+#toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,10px);background:var(--brown);color:white;border-radius:10px;padding:12px 20px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:all .25s;pointer-events:none;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.ok{background:var(--ok)}#toast.err{background:var(--err)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-icon">☕</div>
+    <div class="login-title">Café da Manhã</div>
+    <div class="login-sub">Gestão de entregas para empresas</div>
+    <div class="login-field"><label for="l-user">Usuário</label><input type="text" id="l-user" placeholder="seu usuário" autocomplete="username" autocapitalize="none"></div>
+    <div class="login-field"><label for="l-pass">Senha</label><input type="password" id="l-pass" placeholder="••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"></div>
+    <div class="login-err" id="l-err">Usuário ou senha incorretos.</div>
+    <button class="btn btn-primary" style="width:100%;margin-top:22px;padding:13px;font-size:15px" onclick="login()">Entrar</button>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="header-logo"><span>☕</span> Café da Manhã</div>
+    <div class="header-right">
+      <span id="sync-status"></span>
+      <button class="btn-logout" id="btn-atualizar" onclick="atualizarTudo()" aria-label="Atualizar dados">🔄 Atualizar</button>
+      <span class="user-chip" id="user-chip"></span>
+      <button class="btn-logout" onclick="logout()">Sair</button>
+    </div>
+  </header>
+
+  <nav>
+    <button class="active" onclick="showTab('dashboard',this)">📊 Painel</button>
+    <button onclick="showTab('lancamento',this)">➕ Lançar</button>
+    <button onclick="showTab('historico',this)">📋 Histórico</button>
+    <button onclick="showTab('relatorio',this)">📄 Relatório</button>
+    <button onclick="showTab('empresas',this)">🏢 Empresas</button>
+    <button onclick="showTab('produtos',this)">🧺 Produtos</button>
+    <button onclick="showTab('config',this)">⚙️ Config</button>
+  </nav>
+
+  <main>
+
+    <!-- PAINEL -->
+    <div class="section active" id="tab-dashboard">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:18px;font-weight:700;color:var(--brown)">Painel</div>
+        <select id="dash-periodo" onchange="renderDashboard()" style="padding:7px 12px;font-size:13px;width:auto">
+          <option value="7">Últimos 7 dias</option>
+          <option value="30" selected>Últimos 30 dias</option>
+          <option value="90">Últimos 90 dias</option>
+          <option value="365">Últimos 12 meses</option>
+        </select>
+      </div>
+      <div class="stats-grid s4">
+        <div class="stat"><div class="stat-val" id="d-receita">—</div><div class="stat-label">Valor no período</div></div>
+        <div class="stat"><div class="stat-val" id="d-cafes">—</div><div class="stat-label" id="d-cafes-label">Cafés entregues</div></div>
+        <div class="stat"><div class="stat-val" id="d-dias">—</div><div class="stat-label">Dias com entrega</div></div>
+        <div class="stat"><div class="stat-val" id="d-empresas">—</div><div class="stat-label">Empresas atendidas</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title" id="chart-dias-title">Cafés por dia</div>
+        <div class="chart-wrap"><canvas id="chart-dias"></canvas></div>
+      </div>
+      <div class="dash-grid">
+        <div class="card"><div class="card-title">Valor por empresa</div><div class="chart-wrap-sm"><canvas id="chart-empresas"></canvas></div></div>
+        <div class="card"><div class="card-title">Ranking de empresas</div><div id="dash-top-empresas"></div></div>
+      </div>
+      <div class="card"><div class="card-title">Últimas entregas</div><div id="dash-ultimas"></div></div>
+    </div>
+
+    <!-- LANÇAR -->
+    <div class="section" id="tab-lancamento">
+      <div class="card">
+        <div class="card-title">➕ Nova entrega</div>
+        <div class="fg g2">
+          <div><label for="l-emp">Empresa</label><select id="l-emp" onchange="trocouEmpresaOuProduto()"><option value="">— selecione —</option></select></div>
+          <div><label for="l-data">Data</label><input type="date" id="l-data"></div>
+        </div>
+        <div class="fg g2">
+          <div>
+            <label for="l-prod">Produto</label>
+            <select id="l-prod" onchange="trocouEmpresaOuProduto()"></select>
+            <div class="hint" id="l-prod-hint"></div>
+          </div>
+          <div>
+            <label for="l-qtd" id="l-qtd-label">Quantidade</label>
+            <input type="number" id="l-qtd" placeholder="0" min="1" inputmode="numeric" oninput="atualizarPreview()">
+          </div>
+        </div>
+        <div class="fg g2">
+          <div>
+            <label for="l-valor">Valor por unidade (R$)</label>
+            <input type="number" id="l-valor" placeholder="0,00" step="0.01" min="0" inputmode="decimal" oninput="atualizarPreview()">
+            <div class="hint"><span id="l-valor-hint"></span><button type="button" class="link-btn" id="l-valor-destravar" style="display:none" onclick="destravarValor()">alterar só nesta entrega</button></div>
+          </div>
+          <div><label for="l-obs">Observação (opcional)</label><input type="text" id="l-obs" placeholder="Ex: incluiu suco, pedido especial..."></div>
+        </div>
+        <div class="val-preview" id="val-preview">
+          <div class="total" id="prev-total">R$ 0,00</div>
+          <div class="detail" id="prev-detail"></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px">
+          <button class="btn btn-ghost" onclick="limparForm()">Limpar</button>
+          <button class="btn btn-primary" onclick="lancar()">✓ Lançar entrega</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTÓRICO -->
+    <div class="section" id="tab-historico">
+      <div class="card">
+        <div class="fg g2" style="margin-bottom:10px">
+          <div><label for="f-emp">Empresa</label><select id="f-emp" onchange="renderHistorico()"><option value="">Todas</option></select></div>
+          <div id="f-prod-wrap"><label for="f-prod">Produto</label><select id="f-prod" onchange="renderHistorico()"><option value="">Todos</option></select></div>
+          <div><label for="f-de">De</label><input type="date" id="f-de" onchange="renderHistorico()"></div>
+          <div><label for="f-ate">Até</label><input type="date" id="f-ate" onchange="renderHistorico()"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="limparFiltros()">Ver tudo</button>
+          <button class="btn btn-primary btn-sm" onclick="abrirLote()">✏️ Corrigir valores em lote</button>
+        </div>
+      </div>
+      <div class="card" style="padding:0">
+        <div class="table-wrap">
+          <table>
+            <thead id="hist-head"></thead>
+            <tbody id="hist-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--text2)">
+        Total: <strong id="hist-t-cafes">0</strong> • <strong id="hist-t-val">R$ 0,00</strong>
+      </div>
+    </div>
+
+    <!-- RELATÓRIO -->
+    <div class="section" id="tab-relatorio">
+      <div class="card">
+        <div class="card-title">📄 Relatório para cobrança</div>
+        <label>Período</label>
+        <div class="chips" id="r-presets">
+          <button type="button" class="chip" data-p="mes" onclick="aplicarPreset('mes')">Este mês</button>
+          <button type="button" class="chip" data-p="mespassado" onclick="aplicarPreset('mespassado')">Mês passado</button>
+          <button type="button" class="chip" data-p="semana" onclick="aplicarPreset('semana')">Esta semana</button>
+          <button type="button" class="chip" data-p="30" onclick="aplicarPreset('30')">Últimos 30 dias</button>
+        </div>
+        <div class="fg g2">
+          <div><label for="r-de">De</label><input type="date" id="r-de" onchange="periodoManual()"></div>
+          <div><label for="r-ate">Até</label><input type="date" id="r-ate" onchange="periodoManual()"></div>
+        </div>
+        <label>Empresas <span style="font-weight:400;color:var(--text3)">— toque para escolher uma ou várias</span></label>
+        <div class="chips" id="r-empresas"></div>
+        <div id="r-produtos-wrap">
+          <label>Produtos</label>
+          <div class="chips" id="r-produtos"></div>
+        </div>
+        <div class="fg g2">
+          <div>
+            <label for="r-org">Organizar por</label>
+            <select id="r-org" onchange="opcaoRelMudou()">
+              <option value="empresa">Empresa (cada uma com seu subtotal)</option>
+              <option value="data">Data (tudo em ordem cronológica)</option>
+              <option value="resumo">Só o resumo por empresa</option>
+            </select>
+          </div>
+          <div>
+            <label>Incluir no relatório</label>
+            <div class="checks">
+              <label class="check"><input type="checkbox" id="r-grafico" onchange="opcaoRelMudou()"> Gráfico</label>
+              <label class="check"><input type="checkbox" id="r-unit" onchange="opcaoRelMudou()"> Valor unitário</label>
+              <label class="check"><input type="checkbox" id="r-obs" onchange="opcaoRelMudou()"> Observações</label>
+            </div>
+          </div>
+        </div>
+        <div>
+          <label for="r-rodape">Mensagem no final (opcional — fica salva para os próximos)</label>
+          <input type="text" id="r-rodape" placeholder="Ex: Pagamento via Pix — chave (11) 99999-9999" onchange="opcaoRelMudou()">
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:18px" onclick="gerarRelatorio()">Ver relatório</button>
+      </div>
+      <div id="r-resultado" style="display:none">
+        <div class="stats-grid s3">
+          <div class="stat"><div class="stat-val" id="r-cafes">0</div><div class="stat-label" id="r-cafes-label">Cafés entregues</div></div>
+          <div class="stat"><div class="stat-val" id="r-dias">0</div><div class="stat-label">Dias com entrega</div></div>
+          <div class="stat"><div class="stat-val" id="r-receita">R$ 0</div><div class="stat-label">Valor total</div></div>
+        </div>
+        <div id="r-conteudo"></div>
+        <div class="card" id="r-chart-card">
+          <div class="card-title" id="r-chart-title">Cafés por dia</div>
+          <div class="chart-wrap"><canvas id="r-chart"></canvas></div>
+        </div>
+        <div class="acoes-rel">
+          <button class="btn btn-primary" onclick="exportarPDF()">⬇ Baixar PDF</button>
+          <button class="btn btn-ghost" id="btn-pdf-separado" onclick="exportarPDFsSeparados()">⬇ Um PDF por empresa</button>
+          <button class="btn btn-ghost" onclick="compartilhar()">📤 Enviar no WhatsApp</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMPRESAS -->
+    <div class="section" id="tab-empresas">
+      <div class="card">
+        <div class="card-title">➕ Nova empresa</div>
+        <div class="fg g2">
+          <div><label for="e-nome">Nome da empresa</label><input type="text" id="e-nome" placeholder="Ex: Tech Solutions Ltda"></div>
+          <div><label for="e-contato">Contato / responsável (opcional)</label><input type="text" id="e-contato" placeholder="Ex: João — (11) 99999-9999"></div>
+        </div>
+        <div class="fg g2" style="margin-bottom:6px">
+          <div>
+            <label for="e-prod">O que essa empresa compra</label>
+            <select id="e-prod" onchange="renderPrecosForm('e')"></select>
+          </div>
+        </div>
+        <div class="fg g2" id="e-precos"></div>
+        <div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" onclick="salvarEmpresa()">Salvar empresa</button></div>
+      </div>
+      <div id="emp-lista"></div>
+    </div>
+
+    <!-- PRODUTOS -->
+    <div class="section" id="tab-produtos">
+      <div class="card">
+        <div class="card-title">🧺 O que vocês vendem</div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">Cadastre cada produto uma vez. Depois, em cada empresa, você escolhe se ela compra só um produto ou se o produto é escolhido na hora de lançar.</p>
+        <div class="fg g3" style="margin-bottom:0">
+          <div><label for="p-nome">Nome (singular)</label><input type="text" id="p-nome" placeholder="Ex: Pastel" oninput="sugerirPlural('p')"></div>
+          <div><label for="p-plural">Plural (usado nos relatórios)</label><input type="text" id="p-plural" placeholder="Ex: Pastéis" oninput="this.dataset.editado=this.value?'1':''"></div>
+          <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" style="width:100%" onclick="salvarProduto()">Adicionar produto</button></div>
+        </div>
+      </div>
+      <div id="prod-lista"></div>
+    </div>
+
+    <!-- CONFIG -->
+    <div class="section" id="tab-config">
+      <div class="card">
+        <div class="card-title">🔗 Planilha (onde os dados ficam guardados)</div>
+        <div id="cfg-status" style="font-size:13px;color:var(--text2);margin-bottom:12px"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="testarConexao()">Testar conexão</button>
+          <button class="btn btn-ghost btn-sm" onclick="sincronizarAgora()">🔄 Sincronizar agora</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">👥 Usuários</div>
+        <div id="cfg-users" style="margin-bottom:16px"></div>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Para trocar uma senha, digite o usuário existente e a senha nova.</p>
+        <div class="fg g3" style="margin-bottom:0">
+          <div><label for="cfg-user">Usuário</label><input type="text" id="cfg-user" placeholder="nome" autocapitalize="none"></div>
+          <div><label for="cfg-pass">Senha</label><input type="password" id="cfg-pass" placeholder="senha"></div>
+          <div style="display:flex;align-items:flex-end"><button class="btn btn-ghost" style="width:100%" onclick="addUsuario()">Salvar usuário</button></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">⬇ Exportar</div>
+        <button class="btn btn-ghost btn-sm" onclick="exportarCSV()">Baixar todas as entregas (Excel/CSV)</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL: EDITAR ENTREGA -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <h2>Editar entrega</h2>
+    <input type="hidden" id="edit-id">
+    <div class="fg g2">
+      <div><label for="edit-emp">Empresa</label><select id="edit-emp"></select></div>
+      <div><label for="edit-prod">Produto</label><select id="edit-prod"></select></div>
+      <div><label for="edit-data">Data</label><input type="date" id="edit-data"></div>
+      <div><label for="edit-qtd">Quantidade</label><input type="number" id="edit-qtd" min="1" inputmode="numeric"></div>
+      <div><label for="edit-valor">Valor por unidade (R$)</label><input type="number" id="edit-valor" step="0.01" inputmode="decimal"></div>
+      <div><label for="edit-obs">Observação</label><input type="text" id="edit-obs"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="fecharModal('editModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicao()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CORRIGIR VALORES EM LOTE -->
+<div class="modal-bg" id="massModal">
+  <div class="modal">
+    <h2>Corrigir valores em lote</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.5">Troca o valor por unidade de vários lançamentos de uma vez e recalcula os totais.</p>
+    <div class="fg g2">
+      <div><label for="mm-emp">Empresa</label><select id="mm-emp" onchange="atualizarLote()"></select></div>
+      <div id="mm-prod-wrap"><label for="mm-prod">Produto</label><select id="mm-prod" onchange="atualizarLote()"></select></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label for="mm-periodo">Quais lançamentos</label>
+      <select id="mm-periodo" onchange="atualizarLote()">
+        <option value="todos">Todos</option>
+        <option value="datas">De uma data até outra</option>
+      </select>
+    </div>
+    <div class="fg g2" id="mm-datas">
+      <div><label for="mm-de">De</label><input type="date" id="mm-de" onchange="atualizarLote()"></div>
+      <div><label for="mm-ate">Até</label><input type="date" id="mm-ate" onchange="atualizarLote()"></div>
+    </div>
+    <div class="fg g2">
+      <div><label for="mm-atual">Só onde o valor atual é (opcional)</label><input type="number" id="mm-atual" step="0.01" min="0" inputmode="decimal" placeholder="Ex: 8,00" oninput="atualizarLote()"></div>
+      <div><label for="mm-novo">Novo valor por unidade (R$)</label><input type="number" id="mm-novo" step="0.01" min="0" inputmode="decimal" placeholder="Ex: 9,00" oninput="atualizarLote()"></div>
+    </div>
+    <label class="check" id="mm-fixar-wrap" style="display:none;font-size:13px;align-items:flex-start"><input type="checkbox" id="mm-fixar" style="margin-top:2px"> <span id="mm-fixar-txt"></span></label>
+    <div class="preview-lote" id="mm-preview"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="fecharModal('massModal')">Cancelar</button>
+      <button class="btn btn-primary" id="mm-aplicar" onclick="aplicarLote()">Aplicar correção</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDITAR EMPRESA -->
+<div class="modal-bg" id="empModal">
+  <div class="modal">
+    <h2>Editar empresa</h2>
+    <input type="hidden" id="em-id">
+    <div class="fg g2">
+      <div><label for="em-nome">Nome</label><input type="text" id="em-nome"></div>
+      <div><label for="em-contato">Contato</label><input type="text" id="em-contato"></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label for="em-prod">O que essa empresa compra</label>
+      <select id="em-prod" onchange="renderPrecosForm('em')"></select>
+    </div>
+    <div class="fg g2" id="em-precos"></div>
+    <p style="font-size:12px;color:var(--text3)">Mudar o valor aqui vale para os próximos lançamentos. Para corrigir os já lançados, use "Corrigir valores em lote" no Histórico.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="fecharModal('empModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEmpresaEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: EDITAR PRODUTO -->
+<div class="modal-bg" id="prodModal">
+  <div class="modal">
+    <h2>Editar produto</h2>
+    <input type="hidden" id="pm-id">
+    <div class="fg g2">
+      <div><label for="pm-nome">Nome (singular)</label><input type="text" id="pm-nome"></div>
+      <div><label for="pm-plural">Plural</label><input type="text" id="pm-plural"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="fecharModal('prodModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarProdutoEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONFIGURAÇÃO — URL do Apps Script
+// ═══════════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyPyhXMtEOPr9d2v541NagDIOoGx1QiSEUG_Jr8I_0AVP4xI_BNHU1g2gxsdtd59moJlw/exec';
+
+const DB_KEY = 'cafedb_v3';
+const SESSAO_KEY = 'cafe_sessao';
+const USUARIOS_PADRAO = [
+  {user:'mae', pass:'cafe123', nome:'Mãe'},
+  {user:'pai', pass:'cafe123', nome:'Pai'},
+  {user:'andre', pass:'cafe123', nome:'André'}
+];
+const PRODUTO_PADRAO = { id:'cafe', nome:'Café', plural:'Cafés' };
+
+const byId = id => document.getElementById(id);
+const soma = (list, k) => list.reduce((s, l) => s + Number(l[k] || 0), 0);
+const arred = v => Math.round(Number(v) * 100) / 100;
+
+let db = carregarLocal();
+let currentUser = null;
+let charts = {};
+let sincronizando = false;
+
+// ═══════════════════════════════════
+// NORMALIZAÇÃO DOS DADOS
+// ═══════════════════════════════════
+function pluralSugerido(nome) {
+  const s = String(nome || '').trim(); if (!s) return '';
+  const [w, ...resto] = s.split(' ');
+  const low = w.toLowerCase();
+  const excecoes = { 'pão':'pães', 'mão':'mãos', 'cão':'cães', 'grão':'grãos', 'irmão':'irmãos', 'alemão':'alemães', 'capitão':'capitães' };
+  let p;
+  if (excecoes[low]) p = w[0] === w[0].toUpperCase() ? excecoes[low][0].toUpperCase() + excecoes[low].slice(1) : excecoes[low];
+  else if (low.endsWith('ão')) p = w.slice(0, -2) + 'ões';
+  else if (low.endsWith('el')) p = w.slice(0, -2) + 'éis';
+  else if (low.endsWith('al')) p = w.slice(0, -2) + 'ais';
+  else if (low.endsWith('ol')) p = w.slice(0, -2) + 'óis';
+  else if (low.endsWith('ul')) p = w.slice(0, -2) + 'uis';
+  else if (low.endsWith('il')) p = w.slice(0, -2) + 'is';
+  else if (low.endsWith('m')) p = w.slice(0, -1) + 'ns';
+  else if (/[rz]$/.test(low)) p = w + 'es';
+  else if (/[sx]$/.test(low)) p = w;
+  else p = w + 's';
+  return [p, ...resto].join(' ');
+}
+
+function normProduto(p) {
+  const nome = String(p.nome || '').trim() || 'Produto';
+  return { id: String(p.id), nome, plural: String(p.plural || '').trim() || pluralSugerido(nome) };
+}
+
+function normEmpresa(e) {
+  let precos = e.precos;
+  if (typeof precos === 'string') { try { precos = JSON.parse(precos || '{}'); } catch(x) { precos = {}; } }
+  if (!precos || typeof precos !== 'object') precos = {};
+  const produtoId = String(e.produtoId || 'cafe');
+  const limpos = {};
+  Object.keys(precos).forEach(k => { const v = Number(precos[k]); if (v > 0) limpos[k] = v; });
+  // Empresas antigas (antes dos produtos): valor fixo vira preço do café
+  if (!Object.keys(limpos).length && e.tipoValor === 'fixo' && Number(e.valorFixo) > 0) limpos[produtoId] = Number(e.valorFixo);
+  return {
+    id: String(e.id), nome: String(e.nome || ''), contato: String(e.contato || ''),
+    produtoModo: e.produtoModo === 'livre' ? 'livre' : 'fixo',
+    produtoId, precos: limpos
+  };
+}
+
+function empresaParaSheet(e) {
+  const fixoPreco = e.produtoModo === 'fixo' ? (e.precos[e.produtoId] || 0) : 0;
+  return { ...e, precos: JSON.stringify(e.precos || {}), tipoValor: fixoPreco > 0 ? 'fixo' : 'variavel', valorFixo: fixoPreco };
+}
+
+function normLanc(l) {
+  const c = { ...l };
+  delete c.syncado;
+  return {
+    ...c,
+    id: String(l.id), empresaId: String(l.empresaId), data: normData(l.data),
+    qtd: Number(l.qtd) || 0, valorUnit: Number(l.valorUnit) || 0, total: Number(l.total) || 0,
+    produtoId: String(l.produtoId || 'cafe'), produtoNome: String(l.produtoNome || ''), obs: String(l.obs || '')
+  };
+}
+
+function carregarLocal() {
+  let d = null;
+  try {
+    d = JSON.parse(localStorage.getItem(DB_KEY) || 'null') || JSON.parse(localStorage.getItem('cafedb_v2') || 'null');
+  } catch(e) {}
+  d = d || {};
+  return {
+    lancamentos: (d.lancamentos || []).map(normLanc),
+    empresas: (d.empresas || []).map(normEmpresa),
+    produtos: (d.produtos && d.produtos.length) ? d.produtos.map(normProduto) : [{ ...PRODUTO_PADRAO }],
+    usuarios: (d.usuarios && d.usuarios.length) ? d.usuarios : USUARIOS_PADRAO.map(u => ({...u})),
+    fila: d.fila || [],
+    carregadoDoSheets: !!d.carregadoDoSheets
+  };
+}
+function salvar() { try { localStorage.setItem(DB_KEY, JSON.stringify(db)); } catch(e) {} }
+function temSheets() { return SCRIPT_URL.startsWith('https://'); }
+
+// ── Consultas ──
+function empresaPorId(id) { return db.empresas.find(e => e.id === String(id)); }
+function prodPorId(id) { return db.produtos.find(p => p.id === String(id)); }
+function nomeDe(l) { const e = empresaPorId(l.empresaId); return e ? e.nome : (l.empresaNome || '—'); }
+function prodDe(l) {
+  const p = prodPorId(l.produtoId);
+  if (p) return p;
+  const nome = l.produtoNome || (l.produtoId === 'cafe' ? 'Café' : 'Produto');
+  return { id: String(l.produtoId), nome, plural: pluralSugerido(nome) };
+}
+function qtdTexto(qtd, prod) { return `${qtd} ${(Number(qtd) === 1 ? prod.nome : prod.plural).toLowerCase()}`; }
+function resumoQtd(list) {
+  const m = new Map();
+  list.forEach(l => { const p = prodDe(l); if (!m.has(p.id)) m.set(p.id, { p, q: 0 }); m.get(p.id).q += Number(l.qtd); });
+  return [...m.values()].map(x => qtdTexto(x.q, x.p)).join(' + ') || '0 itens';
+}
+function produtosDistintos(list) { return new Set(list.map(l => prodDe(l).id)).size; }
+function rotuloQtd(list) {
+  if (!list.length) return db.produtos.length === 1 ? db.produtos[0].plural : 'Itens';
+  return produtosDistintos(list) === 1 ? prodDe(list[0]).plural : 'Itens';
+}
+
+// ═══════════════════════════════════
+// SINCRONIZAÇÃO COM A PLANILHA
+// ═══════════════════════════════════
+async function chamarApi(action, dados) {
+  let r;
+  try { r = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ ...dados, action }) }); }
+  catch(e) { return 'rede'; }
+  try { const d = await r.json(); return d.ok ? 'ok' : 'erro'; }
+  catch(e) { return 'rede'; }
+}
+
+function enviar(action, dados) {
+  if (!temSheets()) return;
+  db.fila.push({ action, dados }); salvar(); atualizarStatus();
+  esvaziarFila();
+}
+
+async function esvaziarFila() {
+  if (!temSheets() || sincronizando || !db.fila.length) return;
+  sincronizando = true; atualizarStatus();
+  try {
+    while (db.fila.length) {
+      const op = db.fila[0];
+      const res = await chamarApi(op.action, op.dados);
+      if (res === 'rede') break;
+      if (res === 'erro') console.warn('Planilha recusou a operação:', op);
+      db.fila.shift(); salvar();
+    }
+  } finally { sincronizando = false; atualizarStatus(); }
+}
+
+async function loadFromSheets(feedback = false) {
+  if (!temSheets()) { if (feedback) toast('Planilha ainda não configurada', 'err'); atualizarStatus(); return false; }
+  await esvaziarFila();
+  if (db.fila.length) {
+    if (feedback) toast('Sem conexão — as alterações ficam guardadas e sobem depois', 'err');
+    return false;
+  }
+  try {
+    const r = await fetch(SCRIPT_URL + '?action=getAll');
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'erro');
+    const lanc = (d.lancamentos || []).map(normLanc);
+    const emps = (d.empresas || []).map(normEmpresa);
+    const prods = (d.produtos || []).map(normProduto);
+    const users = d.usuarios || [];
+    if (!db.carregadoDoSheets) {
+      const idsL = new Set(lanc.map(x => x.id)), idsE = new Set(emps.map(x => x.id));
+      db.empresas.filter(e => !idsE.has(e.id)).forEach(e => { emps.push(e); db.fila.push({ action:'saveEmpresa', dados: empresaParaSheet(e) }); });
+      db.lancamentos.filter(l => !idsL.has(l.id)).forEach(l => { lanc.push(l); db.fila.push({ action:'saveLancamento', dados: l }); });
+    }
+    if (!prods.length) db.produtos.forEach(p => { prods.push(p); db.fila.push({ action:'saveProduto', dados: p }); });
+    if (!users.length) db.usuarios.forEach(u => { users.push(u); db.fila.push({ action:'saveUsuario', dados: u }); });
+    db.lancamentos = lanc; db.empresas = emps; db.produtos = prods; db.usuarios = users;
+    db.carregadoDoSheets = true; salvar();
+    esvaziarFila();
+    if (currentUser) renderTudo();
+    if (feedback) toast('Dados atualizados ✓', 'ok');
+    return true;
+  } catch(e) {
+    if (feedback) toast('Não consegui falar com a planilha', 'err');
+    return false;
+  } finally { atualizarStatus(); }
+}
+
+function sincronizarAgora() { loadFromSheets(true); }
+
+async function atualizarTudo() {
+  const b = byId('btn-atualizar');
+  b.disabled = true; b.textContent = '⏳';
+  await loadFromSheets(true);
+  if (relVisivel()) gerarRelatorio(true);
+  b.disabled = false; b.textContent = '🔄 Atualizar';
+}
+
+async function testarConexao() {
+  if (!temSheets()) { toast('A URL da planilha ainda não foi colocada no app', 'err'); return; }
+  try {
+    const r = await fetch(SCRIPT_URL + '?action=ping');
+    const d = await r.json();
+    toast(d.ok ? 'Planilha conectada ✓' : 'Erro: ' + d.error, d.ok ? 'ok' : 'err');
+  } catch(e) { toast('Sem resposta da planilha', 'err'); }
+}
+
+function atualizarStatus() {
+  let txt;
+  if (!temSheets()) txt = '⚠ Planilha não configurada';
+  else if (sincronizando) txt = '⏳ Salvando...';
+  else if (db.fila.length) txt = `● ${db.fila.length} alteração(ões) aguardando internet`;
+  else txt = '✓ Tudo salvo na planilha';
+  const a = byId('sync-status'); if (a) a.textContent = txt;
+  const b = byId('cfg-status'); if (b) b.textContent = txt;
+}
+
+// ═══════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════
+function acharUsuario(u, p) {
+  return db.usuarios.find(x => String(x.user).toLowerCase() === u && String(x.pass) === p);
+}
+
+async function login() {
+  const u = byId('l-user').value.trim().toLowerCase();
+  const p = byId('l-pass').value;
+  let found = acharUsuario(u, p);
+  if (!found && temSheets()) { await loadFromSheets(false); found = acharUsuario(u, p); }
+  if (!found) { byId('l-err').style.display = 'block'; return; }
+  entrar(found);
+}
+
+function entrar(u) {
+  currentUser = u;
+  localStorage.setItem(SESSAO_KEY, u.user);
+  byId('login-screen').style.display = 'none';
+  byId('app').style.display = 'block';
+  byId('user-chip').textContent = u.nome || u.user;
+  init();
+}
+
+function logout() {
+  currentUser = null;
+  localStorage.removeItem(SESSAO_KEY);
+  byId('login-screen').style.display = 'flex';
+  byId('app').style.display = 'none';
+  byId('l-user').value = ''; byId('l-pass').value = '';
+  byId('l-err').style.display = 'none';
+}
+
+// ═══════════════════════════════════
+// INIT / TABS
+// ═══════════════════════════════════
+function isoLocal(x) { return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; }
+function hoje() { return isoLocal(new Date()); }
+function diasAtras(n) { const d = new Date(); d.setDate(d.getDate() - n); return isoLocal(d); }
+function inicioDoMes() { return hoje().slice(0,8) + '01'; }
+
+function init() {
+  byId('l-data').value = hoje();
+  byId('f-de').value = inicioDoMes();
+  byId('f-ate').value = hoje();
+  initRelatorio();
+  renderTudo();
+  atualizarStatus();
+}
+
+function renderTudo() {
+  populateSelects();
+  atualizarLancForm();
+  renderDashboard();
+  renderHistorico();
+  renderEmpresas();
+  renderProdutos();
+  renderUsuarios();
+  renderRelatorioOpcoes();
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  byId('tab-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'historico') renderHistorico();
+  if (name === 'empresas') renderEmpresas();
+  if (name === 'produtos') renderProdutos();
+  if (name === 'config') { renderUsuarios(); atualizarStatus(); }
+}
+
+function opcoes(lista, atual) {
+  return lista.map(([v, t]) => `<option value="${esc(v)}"${String(v) === String(atual) ? ' selected' : ''}>${esc(t)}</option>`).join('');
+}
+
+function populateSelects() {
+  const emps = [...db.empresas].sort((a,b) => a.nome.localeCompare(b.nome)).map(e => [e.id, e.nome]);
+  const prods = db.produtos.map(p => [p.id, p.nome]);
+  const set = (id, html) => { const el = byId(id); if (!el) return; const cur = el.value; el.innerHTML = html; if ([...el.options].some(o => o.value === cur)) el.value = cur; };
+  set('l-emp', '<option value="">— selecione —</option>' + opcoes(emps));
+  set('f-emp', '<option value="">Todas</option>' + opcoes(emps));
+  set('mm-emp', '<option value="">Todas as empresas</option>' + opcoes(emps));
+  set('l-prod', opcoes(prods));
+  set('f-prod', '<option value="">Todos</option>' + opcoes(prods));
+  set('mm-prod', '<option value="">Todos os produtos</option>' + opcoes(prods));
+  const modos = opcoes(db.produtos.map(p => [p.id, 'Só ' + p.nome.toLowerCase()])) + '<option value="">Escolher na hora de lançar</option>';
+  set('e-prod', modos);
+  byId('f-prod-wrap').style.display = db.produtos.length > 1 ? 'block' : 'none';
+}
+
+// ═══════════════════════════════════
+// PAINEL
+// ═══════════════════════════════════
+function renderDashboard() {
+  const list = db.lancamentos.filter(l => l.data >= diasAtras(parseInt(byId('dash-periodo').value)));
+  const rot = rotuloQtd(list);
+  byId('d-receita').textContent = 'R$ ' + fmtVal(soma(list, 'total'));
+  byId('d-cafes').textContent = soma(list, 'qtd');
+  byId('d-cafes-label').textContent = produtosDistintos(list) > 1 ? resumoQtd(list) : `${rot} entregues`;
+  byId('d-dias').textContent = new Set(list.map(l => l.data)).size;
+  byId('d-empresas').textContent = new Set(list.map(l => l.empresaId)).size;
+  byId('chart-dias-title').textContent = produtosDistintos(list) > 1 ? 'Itens entregues por dia' : `${rot} por dia`;
+
+  const porDia = {};
+  list.forEach(l => { porDia[l.data] = (porDia[l.data] || 0) + Number(l.qtd); });
+  const ds = Object.keys(porDia).sort().slice(-31);
+  drawChart('chart-dias', 'bar', ds.map(fmtDateCurta), ds.map(d => porDia[d]), 'Quantidade', '#5c3d2e');
+
+  const grupos = agruparPorEmpresa(list);
+  const cores = ['#5c3d2e','#8b6347','#c8a97e','#3d2820','#a8826a','#e8d5b7','#6b4a38','#d9bf99'];
+  drawChart('chart-empresas', 'doughnut', grupos.map(g => g.nome), grupos.map(g => g.total), 'Valor', cores);
+
+  const topEl = byId('dash-top-empresas');
+  if (!grupos.length) topEl.innerHTML = '<div class="empty" style="padding:20px">Sem entregas no período</div>';
+  else {
+    const max = grupos[0].total || 1;
+    topEl.innerHTML = grupos.map(g => `
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;gap:8px">
+          <span style="font-weight:500">${esc(g.nome)}</span>
+          <span style="font-family:'JetBrains Mono',monospace;color:var(--brown);white-space:nowrap">R$ ${fmtVal(g.total)}</span>
+        </div>
+        <div style="background:var(--bg);border-radius:4px;height:6px;overflow:hidden">
+          <div style="background:var(--brown);height:100%;border-radius:4px;width:${(g.total/max*100).toFixed(1)}%"></div>
+        </div>
+      </div>`).join('');
+  }
+
+  const ults = [...db.lancamentos].sort((a,b) => b.data.localeCompare(a.data) || String(b.criadoEm).localeCompare(String(a.criadoEm))).slice(0,5);
+  byId('dash-ultimas').innerHTML = !ults.length
+    ? '<div class="empty" style="padding:20px"><div class="empty-icon">📭</div>Nenhuma entrega lançada ainda</div>'
+    : ults.map(l => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:8px">
+        <div><span class="emp-chip">${esc(nomeDe(l))}</span><span style="font-size:12px;color:var(--text3);margin-left:8px">${fmtDate(l.data)}</span></div>
+        <div style="text-align:right">
+          <div style="font-family:'JetBrains Mono',monospace;font-weight:500">R$ ${fmtVal(l.total)}</div>
+          <div style="font-size:11px;color:var(--text3)">${esc(qtdTexto(l.qtd, prodDe(l)))}</div>
+        </div>
+      </div>`).join('');
+}
+
+function agruparPorEmpresa(list) {
+  const g = {};
+  list.forEach(l => {
+    if (!g[l.empresaId]) g[l.empresaId] = { id: l.empresaId, nome: nomeDe(l), qtd: 0, total: 0, itens: [] };
+    g[l.empresaId].qtd += Number(l.qtd); g[l.empresaId].total += Number(l.total); g[l.empresaId].itens.push(l);
+  });
+  return Object.values(g).map(x => ({ ...x, media: x.qtd ? x.total / x.qtd : 0, qtdTxt: resumoQtd(x.itens) })).sort((a,b) => b.total - a.total);
+}
+
+function drawChart(id, type, labels, data, label, color) {
+  const canvas = byId(id); if (!canvas || typeof Chart === 'undefined') return;
+  if (charts[id]) charts[id].destroy();
+  const rosca = type === 'doughnut';
+  charts[id] = new Chart(canvas.getContext('2d'), {
+    type,
+    data: { labels, datasets: [{ label, data, backgroundColor: rosca ? color : color + 'b3', borderColor: rosca ? '#fff' : color, borderWidth: rosca ? 2 : 1.5, borderRadius: rosca ? 0 : 6 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: rosca, position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12 } } },
+      scales: rosca ? {} : { y: { beginAtZero: true, ticks: { precision: 0 } }, x: { grid: { display: false } } }
+    }
+  });
+}
+
+// ═══════════════════════════════════
+// PRODUTOS
+// ═══════════════════════════════════
+function sugerirPlural(prefix) {
+  const plural = byId(prefix + '-plural');
+  if (plural.dataset.editado === '1') return;
+  plural.value = pluralSugerido(byId(prefix + '-nome').value);
+}
+
+function salvarProduto() {
+  const nome = byId('p-nome').value.trim();
+  if (!nome) { toast('Informe o nome do produto', 'err'); return; }
+  if (db.produtos.some(p => p.nome.toLowerCase() === nome.toLowerCase())) { toast('Esse produto já existe', 'err'); return; }
+  const p = normProduto({ id: Date.now().toString(), nome, plural: byId('p-plural').value.trim() });
+  db.produtos.push(p); salvar(); enviar('saveProduto', p);
+  byId('p-nome').value = ''; byId('p-plural').value = ''; byId('p-plural').dataset.editado = '';
+  renderTudo();
+  toast(`${p.nome} cadastrado ✓`, 'ok');
+}
+
+function renderProdutos() {
+  const el = byId('prod-lista'); if (!el) return;
+  el.innerHTML = db.produtos.map(p => {
+    const usos = db.lancamentos.filter(l => l.produtoId === p.id);
+    const emps = db.empresas.filter(e => e.produtoModo === 'fixo' && e.produtoId === p.id).length;
+    return `<div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding:16px 20px">
+      <div>
+        <div style="font-weight:600;font-size:14px">${esc(p.nome)}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:3px">Plural: ${esc(p.plural)} • ${usos.length} lançamento(s)${emps ? ` • ${emps} empresa(s) só compram este` : ''}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-edit btn-xs" onclick="editarProduto('${esc(p.id)}')">✏️ Editar</button>
+        ${db.produtos.length > 1 ? `<button class="btn btn-danger btn-xs" onclick="removerProduto('${esc(p.id)}')">✕</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editarProduto(id) {
+  const p = prodPorId(id); if (!p) return;
+  byId('pm-id').value = p.id; byId('pm-nome').value = p.nome; byId('pm-plural').value = p.plural;
+  byId('pm-plural').dataset.editado = '1';
+  byId('prodModal').classList.add('open');
+}
+
+function salvarProdutoEdit() {
+  const p = prodPorId(byId('pm-id').value); if (!p) return;
+  const nome = byId('pm-nome').value.trim();
+  if (!nome) { toast('Informe o nome', 'err'); return; }
+  p.nome = nome; p.plural = byId('pm-plural').value.trim() || pluralSugerido(nome);
+  salvar(); enviar('saveProduto', p);
+  fecharModal('prodModal'); renderTudo();
+  toast('Produto atualizado ✓', 'ok');
+}
+
+function removerProduto(id) {
+  const p = prodPorId(id); if (!p) return;
+  if (db.produtos.length <= 1) { toast('É preciso ter pelo menos um produto', 'err'); return; }
+  const afetadas = db.empresas.filter(e => e.produtoModo === 'fixo' && e.produtoId === p.id);
+  let msg = `Remover "${p.nome}"? Os lançamentos já feitos continuam no histórico.`;
+  if (afetadas.length) msg += `\n\n${afetadas.length} empresa(s) que só compravam ${p.nome.toLowerCase()} passarão a escolher o produto na hora.`;
+  if (!confirm(msg)) return;
+  db.produtos = db.produtos.filter(x => x.id !== p.id);
+  db.empresas.forEach(e => {
+    let mudou = false;
+    if (e.produtoModo === 'fixo' && e.produtoId === p.id) { e.produtoModo = 'livre'; e.produtoId = db.produtos[0].id; mudou = true; }
+    if (e.precos[p.id]) { delete e.precos[p.id]; mudou = true; }
+    if (mudou) enviar('saveEmpresa', empresaParaSheet(e));
+  });
+  salvar(); enviar('deleteProduto', { id: p.id });
+  renderTudo();
+  toast('Produto removido', 'ok');
+}
+
+// ═══════════════════════════════════
+// EMPRESAS
+// ═══════════════════════════════════
+function lerPrecosForm(prefix) {
+  const precos = {};
+  document.querySelectorAll(`#${prefix}-precos input[data-prod]`).forEach(inp => {
+    const v = parseFloat(inp.value); if (v > 0) precos[inp.dataset.prod] = v;
+  });
+  return precos;
+}
+
+function renderPrecosForm(prefix, precos) {
+  if (!precos) precos = lerPrecosForm(prefix);
+  const sel = byId(prefix + '-prod').value;
+  const alvo = sel ? db.produtos.filter(p => p.id === sel) : db.produtos;
+  byId(prefix + '-precos').innerHTML = alvo.map(p => `
+    <div><label for="${prefix}-preco-${esc(p.id)}">Valor por ${esc(p.nome.toLowerCase())} (R$)</label>
+    <input type="number" id="${prefix}-preco-${esc(p.id)}" data-prod="${esc(p.id)}" step="0.01" min="0" inputmode="decimal"
+      value="${precos[p.id] > 0 ? precos[p.id] : ''}" placeholder="Vazio = digitar a cada entrega"></div>`).join('');
+}
+
+function montarEmpresa(prefix, base) {
+  const nome = byId(prefix + '-nome').value.trim();
+  if (!nome) { toast('Informe o nome da empresa', 'err'); return null; }
+  const sel = byId(prefix + '-prod').value;
+  return {
+    ...base, nome,
+    contato: byId(prefix + '-contato').value.trim(),
+    produtoModo: sel ? 'fixo' : 'livre',
+    produtoId: sel || (base && base.produtoId) || db.produtos[0].id,
+    precos: lerPrecosForm(prefix)
+  };
+}
+
+function salvarEmpresa() {
+  const e = montarEmpresa('e', { id: Date.now().toString() }); if (!e) return;
+  db.empresas.push(e); salvar(); enviar('saveEmpresa', empresaParaSheet(e));
+  ['e-nome','e-contato'].forEach(id => byId(id).value = '');
+  renderPrecosForm('e', {});
+  renderTudo();
+  toast('Empresa cadastrada ✓', 'ok');
+}
+
+function descricaoEmpresa(e) {
+  const badges = [];
+  if (e.produtoModo === 'fixo') {
+    const p = prodPorId(e.produtoId) || { nome: 'Produto removido' };
+    badges.push(`<span class="badge-prod">Só ${esc(p.nome.toLowerCase())}</span>`);
+    const v = e.precos[e.produtoId];
+    badges.push(v > 0 ? `<span class="badge-fixo">R$ ${fmtVal(v)} cada</span>` : '<span class="badge-var">Valor variável</span>');
+  } else {
+    badges.push('<span class="badge-prod">Escolhe na hora</span>');
+    db.produtos.forEach(p => {
+      const v = e.precos[p.id];
+      badges.push(v > 0 ? `<span class="badge-fixo">${esc(p.nome)}: R$ ${fmtVal(v)}</span>` : `<span class="badge-var">${esc(p.nome)}: variável</span>`);
+    });
+  }
+  return badges.join(' ');
+}
+
+function renderEmpresas() {
+  const el = byId('emp-lista');
+  if (!byId('e-precos').children.length) renderPrecosForm('e', {});
+  if (!db.empresas.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">🏢</div>Cadastre a primeira empresa acima</div>'; return; }
+  el.innerHTML = [...db.empresas].sort((a,b) => a.nome.localeCompare(b.nome)).map(e => {
+    const doc = db.lancamentos.filter(l => l.empresaId === e.id);
+    return `<div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding:16px 20px">
+      <div style="min-width:0">
+        <div style="font-weight:600;font-size:14px;margin-bottom:4px">${esc(e.nome)}</div>
+        ${e.contato ? `<div style="font-size:12px;color:var(--text3);margin-bottom:6px">${esc(e.contato)}</div>` : ''}
+        <div style="display:flex;gap:5px;flex-wrap:wrap">${descricaoEmpresa(e)}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--brown);font-weight:500">R$ ${fmtVal(soma(doc,'total'))}</div>
+        <div style="font-size:12px;color:var(--text3)">${doc.length ? esc(resumoQtd(doc)) + ' no total' : 'Nenhuma entrega ainda'}</div>
+        <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">
+          <button class="btn btn-edit btn-xs" onclick="editarEmpresa('${esc(e.id)}')">✏️ Editar</button>
+          <button class="btn btn-danger btn-xs" onclick="removerEmpresa('${esc(e.id)}')">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function editarEmpresa(id) {
+  const e = empresaPorId(id); if (!e) return;
+  byId('em-id').value = e.id;
+  byId('em-nome').value = e.nome;
+  byId('em-contato').value = e.contato || '';
+  byId('em-prod').innerHTML = opcoes(db.produtos.map(p => [p.id, 'Só ' + p.nome.toLowerCase()])) + '<option value="">Escolher na hora de lançar</option>';
+  byId('em-prod').value = e.produtoModo === 'fixo' && prodPorId(e.produtoId) ? e.produtoId : '';
+  renderPrecosForm('em', e.precos);
+  byId('empModal').classList.add('open');
+}
+
+function salvarEmpresaEdit() {
+  const i = db.empresas.findIndex(x => x.id === byId('em-id').value); if (i < 0) return;
+  const e = montarEmpresa('em', db.empresas[i]); if (!e) return;
+  db.empresas[i] = e; salvar(); enviar('saveEmpresa', empresaParaSheet(e));
+  fecharModal('empModal'); renderTudo();
+  toast('Empresa atualizada ✓', 'ok');
+}
+
+function removerEmpresa(id) {
+  const e = empresaPorId(id); if (!e) return;
+  const temLanc = db.lancamentos.some(l => l.empresaId === e.id);
+  if (!confirm(temLanc ? `Remover "${e.nome}"? As entregas já lançadas continuam no histórico.` : `Remover "${e.nome}"?`)) return;
+  db.empresas = db.empresas.filter(x => x.id !== e.id);
+  salvar(); enviar('deleteEmpresa', { id: e.id });
+  renderTudo();
+  toast('Empresa removida', 'ok');
+}
+
+// ═══════════════════════════════════
+// LANÇAMENTO
+// ═══════════════════════════════════
+function atualizarLancForm() {
+  const emp = empresaPorId(byId('l-emp').value);
+  const selProd = byId('l-prod');
+  const hintProd = byId('l-prod-hint');
+  if (emp && emp.produtoModo === 'fixo' && prodPorId(emp.produtoId)) {
+    selProd.value = emp.produtoId; selProd.disabled = true;
+    hintProd.textContent = 'Esta empresa só compra este produto';
+  } else {
+    selProd.disabled = false;
+    hintProd.textContent = emp ? 'Escolha o que foi entregue' : '';
+  }
+  const prod = prodPorId(selProd.value) || db.produtos[0];
+  byId('l-qtd-label').textContent = `Quantidade de ${prod.plural.toLowerCase()}`;
+
+  const valInp = byId('l-valor'), hintVal = byId('l-valor-hint'), destravar = byId('l-valor-destravar');
+  const preco = emp ? emp.precos[prod.id] : 0;
+  if (preco > 0 && valInp.dataset.manual !== '1') {
+    valInp.value = preco; valInp.readOnly = true; valInp.dataset.auto = '1';
+    hintVal.textContent = 'Valor fixo desta empresa'; destravar.style.display = 'inline';
+  } else {
+    if (valInp.dataset.auto === '1' && valInp.dataset.manual !== '1') valInp.value = '';
+    valInp.readOnly = false; valInp.dataset.auto = '';
+    hintVal.textContent = valInp.dataset.manual === '1' ? 'Valor alterado só nesta entrega' : '';
+    destravar.style.display = 'none';
+  }
+  atualizarPreview();
+}
+
+function destravarValor() {
+  const v = byId('l-valor');
+  v.dataset.manual = '1'; v.readOnly = false; v.dataset.auto = '';
+  byId('l-valor-destravar').style.display = 'none';
+  byId('l-valor-hint').textContent = 'Valor alterado só nesta entrega';
+  v.focus(); v.select();
+}
+
+function trocouEmpresaOuProduto() {
+  byId('l-valor').dataset.manual = '';
+  atualizarLancForm();
+}
+
+function atualizarPreview() {
+  const prod = prodPorId(byId('l-prod').value) || db.produtos[0];
+  const qtd = parseFloat(byId('l-qtd').value) || 0;
+  const vu = parseFloat(byId('l-valor').value) || 0;
+  const prev = byId('val-preview');
+  if (qtd > 0 && vu > 0) {
+    prev.style.display = 'block';
+    byId('prev-total').textContent = 'R$ ' + fmtVal(qtd * vu);
+    byId('prev-detail').textContent = `${qtdTexto(qtd, prod)} × R$ ${fmtVal(vu)}`;
+  } else prev.style.display = 'none';
+}
+
+function lancar() {
+  const empId = byId('l-emp').value;
+  const data = byId('l-data').value;
+  const qtd = parseInt(byId('l-qtd').value);
+  const valorUnit = parseFloat(byId('l-valor').value);
+  const prod = prodPorId(byId('l-prod').value);
+  if (!empId) { toast('Selecione a empresa', 'err'); return; }
+  if (!prod) { toast('Selecione o produto', 'err'); return; }
+  if (!data) { toast('Informe a data', 'err'); return; }
+  if (!qtd || qtd < 1) { toast('Informe a quantidade', 'err'); return; }
+  if (!valorUnit || valorUnit <= 0) { toast('Informe o valor por unidade', 'err'); return; }
+  const emp = empresaPorId(empId);
+  const l = {
+    id: Date.now().toString(),
+    empresaId: empId, empresaNome: emp ? emp.nome : '',
+    produtoId: prod.id, produtoNome: prod.nome,
+    data, qtd, valorUnit, total: arred(qtd * valorUnit),
+    obs: byId('l-obs').value.trim(),
+    lancadoPor: currentUser.nome || currentUser.user,
+    criadoEm: new Date().toISOString()
+  };
+  db.lancamentos.push(l); salvar();
+  enviar('saveLancamento', l);
+  renderDashboard(); renderHistorico(); renderEmpresas();
+  toast(`✓ ${qtdTexto(qtd, prod)} lançado(s) — R$ ${fmtVal(l.total)}`, 'ok');
+  // Mantém empresa, produto e data para lançar a próxima mais rápido
+  byId('l-qtd').value = ''; byId('l-obs').value = '';
+  byId('l-valor').dataset.manual = '';
+  atualizarLancForm();
+  byId('l-qtd').focus();
+}
+
+function limparForm() {
+  ['l-emp','l-qtd','l-obs','l-valor'].forEach(id => byId(id).value = '');
+  byId('l-valor').dataset.manual = ''; byId('l-valor').dataset.auto = '';
+  byId('l-data').value = hoje();
+  atualizarLancForm();
+}
+
+// ═══════════════════════════════════
+// HISTÓRICO
+// ═══════════════════════════════════
+function filtradosHistorico() {
+  const empF = byId('f-emp').value, prodF = byId('f-prod').value, de = byId('f-de').value, ate = byId('f-ate').value;
+  return db.lancamentos
+    .filter(l => (!empF || l.empresaId === empF) && (!prodF || l.produtoId === prodF) && (!de || l.data >= de) && (!ate || l.data <= ate))
+    .sort((a,b) => b.data.localeCompare(a.data) || String(b.criadoEm).localeCompare(String(a.criadoEm)));
+}
+
+function renderHistorico() {
+  const list = filtradosHistorico();
+  const comProd = db.produtos.length > 1 || produtosDistintos(db.lancamentos) > 1;
+  byId('hist-head').innerHTML = `<tr><th>Data</th><th>Empresa</th>${comProd ? '<th>Produto</th>' : ''}<th>Qtd</th><th>Valor unit.</th><th>Total</th><th>Obs.</th><th></th></tr>`;
+  byId('hist-body').innerHTML = !list.length
+    ? `<tr><td colspan="${comProd ? 8 : 7}" style="text-align:center;padding:32px;color:var(--text3)">Nenhuma entrega com esses filtros</td></tr>`
+    : list.map(l => `<tr>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap">${fmtDate(l.data)}</td>
+      <td><span class="emp-chip">${esc(nomeDe(l))}</span></td>
+      ${comProd ? `<td style="font-size:13px">${esc(prodDe(l).nome)}</td>` : ''}
+      <td style="font-family:'JetBrains Mono',monospace;text-align:center">${l.qtd}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap">R$ ${fmtVal(l.valorUnit)}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-weight:500;white-space:nowrap">R$ ${fmtVal(l.total)}</td>
+      <td style="font-size:12px;color:var(--text3)">${esc(l.obs) || '—'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-edit btn-xs" onclick="abrirEdicao('${esc(l.id)}')" aria-label="Editar">✏️</button>
+        <button class="btn btn-danger btn-xs" onclick="removerLanc('${esc(l.id)}')" aria-label="Remover">✕</button>
+      </td></tr>`).join('');
+  byId('hist-t-cafes').textContent = list.length ? resumoQtd(list) : '0 itens';
+  byId('hist-t-val').textContent = 'R$ ' + fmtVal(soma(list, 'total'));
+}
+
+function limparFiltros() {
+  ['f-emp','f-prod','f-de','f-ate'].forEach(id => byId(id).value = '');
+  renderHistorico();
+}
+
+function removerLanc(id) {
+  if (!confirm('Remover esta entrega?')) return;
+  db.lancamentos = db.lancamentos.filter(l => l.id !== String(id));
+  salvar(); enviar('deleteLancamento', { id: String(id) });
+  renderHistorico(); renderDashboard(); renderEmpresas();
+  toast('Entrega removida', 'ok');
+}
+
+function abrirEdicao(id) {
+  const l = db.lancamentos.find(x => x.id === String(id)); if (!l) return;
+  byId('edit-id').value = l.id;
+  byId('edit-data').value = l.data;
+  byId('edit-qtd').value = l.qtd;
+  byId('edit-valor').value = l.valorUnit;
+  byId('edit-obs').value = l.obs || '';
+  const emps = db.empresas.map(e => [e.id, e.nome]);
+  if (!empresaPorId(l.empresaId)) emps.push([l.empresaId, l.empresaNome || 'Empresa removida']);
+  byId('edit-emp').innerHTML = opcoes(emps, l.empresaId);
+  const prods = db.produtos.map(p => [p.id, p.nome]);
+  if (!prodPorId(l.produtoId)) prods.push([l.produtoId, prodDe(l).nome]);
+  byId('edit-prod').innerHTML = opcoes(prods, l.produtoId);
+  byId('editModal').classList.add('open');
+}
+
+function salvarEdicao() {
+  const l = db.lancamentos.find(x => x.id === byId('edit-id').value); if (!l) return;
+  const qtd = parseInt(byId('edit-qtd').value);
+  const vu = parseFloat(byId('edit-valor').value);
+  if (!qtd || qtd < 1 || !vu || vu <= 0) { toast('Confira quantidade e valor', 'err'); return; }
+  const emp = empresaPorId(byId('edit-emp').value);
+  const prod = prodPorId(byId('edit-prod').value);
+  l.empresaId = byId('edit-emp').value; if (emp) l.empresaNome = emp.nome;
+  l.produtoId = byId('edit-prod').value; if (prod) l.produtoNome = prod.nome;
+  l.data = byId('edit-data').value;
+  l.qtd = qtd; l.valorUnit = vu; l.total = arred(qtd * vu);
+  l.obs = byId('edit-obs').value.trim();
+  salvar(); enviar('saveLancamento', l);
+  fecharModal('editModal'); renderHistorico(); renderDashboard(); renderEmpresas();
+  toast('Entrega atualizada ✓', 'ok');
+}
+
+// ── Correção de valores em lote ──
+function abrirLote() {
+  populateSelects();
+  byId('mm-emp').value = byId('f-emp').value;
+  byId('mm-prod').value = byId('f-prod').value;
+  const temPeriodo = byId('f-de').value || byId('f-ate').value;
+  byId('mm-periodo').value = temPeriodo ? 'datas' : 'todos';
+  byId('mm-de').value = byId('f-de').value;
+  byId('mm-ate').value = byId('f-ate').value;
+  byId('mm-atual').value = ''; byId('mm-novo').value = '';
+  byId('mm-prod-wrap').style.display = db.produtos.length > 1 ? 'block' : 'none';
+  atualizarLote();
+  byId('massModal').classList.add('open');
+}
+
+function produtoAlvoLote() {
+  const emp = empresaPorId(byId('mm-emp').value);
+  if (!emp) return null;
+  if (byId('mm-prod').value) return prodPorId(byId('mm-prod').value);
+  if (emp.produtoModo === 'fixo') return prodPorId(emp.produtoId);
+  return db.produtos.length === 1 ? db.produtos[0] : null;
+}
+
+function itensDoLote() {
+  const emp = byId('mm-emp').value, prod = byId('mm-prod').value;
+  const porData = byId('mm-periodo').value === 'datas';
+  const de = byId('mm-de').value, ate = byId('mm-ate').value;
+  const atual = parseFloat(byId('mm-atual').value);
+  return db.lancamentos.filter(l =>
+    (!emp || l.empresaId === emp) && (!prod || l.produtoId === prod) &&
+    (!porData || ((!de || l.data >= de) && (!ate || l.data <= ate))) &&
+    (!(atual > 0) || Math.abs(l.valorUnit - atual) < 0.005));
+}
+
+function atualizarLote() {
+  byId('mm-datas').style.display = byId('mm-periodo').value === 'datas' ? 'grid' : 'none';
+  const itens = itensDoLote();
+  const novo = parseFloat(byId('mm-novo').value);
+  const alvo = produtoAlvoLote();
+  const emp = empresaPorId(byId('mm-emp').value);
+  const fixarWrap = byId('mm-fixar-wrap');
+  if (emp && alvo && novo > 0) {
+    fixarWrap.style.display = 'flex';
+    byId('mm-fixar-txt').textContent = `Usar R$ ${fmtVal(novo)} como valor fixo de ${alvo.nome.toLowerCase()} para ${emp.nome} daqui pra frente`;
+  } else { fixarWrap.style.display = 'none'; byId('mm-fixar').checked = false; }
+
+  const prev = byId('mm-preview'), btn = byId('mm-aplicar');
+  if (!itens.length) {
+    prev.innerHTML = 'Nenhum lançamento com esses filtros.';
+    btn.disabled = true; return;
+  }
+  const antes = soma(itens, 'total');
+  if (!(novo > 0)) {
+    prev.innerHTML = `<strong>${itens.length} lançamento(s)</strong> encontrados (${esc(resumoQtd(itens))}), somando R$ ${fmtVal(antes)}. Digite o novo valor.`;
+    btn.disabled = true; return;
+  }
+  const depois = itens.reduce((s, l) => s + arred(l.qtd * novo), 0);
+  const dif = depois - antes;
+  prev.innerHTML = `<strong>${itens.length} lançamento(s)</strong> serão alterados (${esc(resumoQtd(itens))}).<br>
+    Total passa de <strong>R$ ${fmtVal(antes)}</strong> para <strong>R$ ${fmtVal(depois)}</strong>
+    <span style="color:${dif >= 0 ? 'var(--ok)' : 'var(--err)'}">(${dif >= 0 ? '+' : '−'}R$ ${fmtVal(Math.abs(dif))})</span>`;
+  btn.disabled = false;
+}
+
+function aplicarLote() {
+  const itens = itensDoLote();
+  const novo = parseFloat(byId('mm-novo').value);
+  if (!itens.length || !(novo > 0)) return;
+  if (!confirm(`Alterar o valor unitário de ${itens.length} lançamento(s) para R$ ${fmtVal(novo)}?`)) return;
+  itens.forEach(l => { l.valorUnit = novo; l.total = arred(l.qtd * novo); });
+  for (let i = 0; i < itens.length; i += 100) enviar('saveLancamentosLote', { itens: itens.slice(i, i + 100) });
+  const alvo = produtoAlvoLote(), emp = empresaPorId(byId('mm-emp').value);
+  if (byId('mm-fixar').checked && emp && alvo) {
+    emp.precos[alvo.id] = novo;
+    enviar('saveEmpresa', empresaParaSheet(emp));
+  }
+  salvar();
+  fecharModal('massModal');
+  renderTudo();
+  if (relVisivel()) gerarRelatorio(true);
+  toast(`${itens.length} lançamento(s) corrigidos ✓`, 'ok');
+}
+
+function fecharModal(id = 'editModal') { byId(id).classList.remove('open'); }
+
+// ═══════════════════════════════════
+// RELATÓRIO
+// ═══════════════════════════════════
+const REL_PREFS_KEY = 'cafe_rel_prefs';
+let relEmpresas = new Set();
+let relProdutos = new Set();
+let relPrefs = { org: 'empresa', grafico: true, unit: true, obs: true, rodape: '' };
+try { Object.assign(relPrefs, JSON.parse(localStorage.getItem(REL_PREFS_KEY) || '{}')); } catch(e) {}
+
+function initRelatorio() {
+  byId('r-org').value = relPrefs.org;
+  byId('r-grafico').checked = relPrefs.grafico;
+  byId('r-unit').checked = relPrefs.unit;
+  byId('r-obs').checked = relPrefs.obs;
+  byId('r-rodape').value = relPrefs.rodape || '';
+  aplicarPreset('mes');
+}
+
+function salvarRelPrefs() {
+  relPrefs = { org: byId('r-org').value, grafico: byId('r-grafico').checked, unit: byId('r-unit').checked,
+    obs: byId('r-obs').checked, rodape: byId('r-rodape').value.trim() };
+  try { localStorage.setItem(REL_PREFS_KEY, JSON.stringify(relPrefs)); } catch(e) {}
+}
+
+function relVisivel() { const r = byId('r-resultado'); return !!r && r.style.display === 'block'; }
+function opcaoRelMudou() { salvarRelPrefs(); if (relVisivel()) gerarRelatorio(true); }
+
+function aplicarPreset(p) {
+  const d = new Date();
+  let de, ate = isoLocal(d);
+  if (p === 'mes') de = isoLocal(new Date(d.getFullYear(), d.getMonth(), 1));
+  if (p === 'mespassado') { de = isoLocal(new Date(d.getFullYear(), d.getMonth()-1, 1)); ate = isoLocal(new Date(d.getFullYear(), d.getMonth(), 0)); }
+  if (p === 'semana') { const s = new Date(d); s.setDate(s.getDate() - (s.getDay() + 6) % 7); de = isoLocal(s); }
+  if (p === '30') { const s = new Date(d); s.setDate(s.getDate() - 29); de = isoLocal(s); }
+  byId('r-de').value = de; byId('r-ate').value = ate;
+  document.querySelectorAll('#r-presets .chip').forEach(c => c.classList.toggle('on', c.dataset.p === p));
+  if (relVisivel()) gerarRelatorio(true);
+}
+
+function periodoManual() {
+  document.querySelectorAll('#r-presets .chip').forEach(c => c.classList.remove('on'));
+  if (relVisivel()) gerarRelatorio(true);
+}
+
+function catalogoRel(tipo) {
+  const mapa = new Map();
+  if (tipo === 'emp') {
+    db.empresas.forEach(e => mapa.set(e.id, e.nome));
+    db.lancamentos.forEach(l => { if (!mapa.has(l.empresaId)) mapa.set(l.empresaId, l.empresaNome || 'Empresa removida'); });
+  } else {
+    db.produtos.forEach(p => mapa.set(p.id, p.nome));
+    db.lancamentos.forEach(l => { if (!mapa.has(l.produtoId)) mapa.set(l.produtoId, prodDe(l).nome); });
+  }
+  return [...mapa.entries()].map(([id, nome]) => ({ id, nome })).sort((a,b) => a.nome.localeCompare(b.nome));
+}
+
+function renderChips(alvoId, lista, sel, fn, rotuloTodos) {
+  [...sel].forEach(id => { if (!lista.some(x => x.id === id)) sel.delete(id); });
+  byId(alvoId).innerHTML =
+    `<button type="button" class="chip ${sel.size === 0 ? 'on' : ''}" onclick="${fn}('')">${rotuloTodos}</button>` +
+    lista.map(x => `<button type="button" class="chip ${sel.has(x.id) ? 'on' : ''}" onclick="${fn}('${esc(x.id)}')">${esc(x.nome)}</button>`).join('');
+}
+
+function renderRelatorioOpcoes() {
+  if (!byId('r-empresas')) return;
+  renderChips('r-empresas', catalogoRel('emp'), relEmpresas, 'toggleEmpresaRel', 'Todas');
+  const prods = catalogoRel('prod');
+  byId('r-produtos-wrap').style.display = prods.length > 1 ? 'block' : 'none';
+  renderChips('r-produtos', prods, relProdutos, 'toggleProdutoRel', 'Todos');
+}
+
+function alternar(sel, id) { if (!id) sel.clear(); else if (sel.has(id)) sel.delete(id); else sel.add(id); }
+function toggleEmpresaRel(id) { alternar(relEmpresas, id); renderRelatorioOpcoes(); if (relVisivel()) gerarRelatorio(true); }
+function toggleProdutoRel(id) { alternar(relProdutos, id); renderRelatorioOpcoes(); if (relVisivel()) gerarRelatorio(true); }
+
+function dadosRelatorio(soEmpresaId) {
+  const de = byId('r-de').value, ate = byId('r-ate').value;
+  let list = db.lancamentos.filter(l => l.data >= de && l.data <= ate);
+  if (soEmpresaId) list = list.filter(l => l.empresaId === soEmpresaId);
+  else if (relEmpresas.size) list = list.filter(l => relEmpresas.has(l.empresaId));
+  if (relProdutos.size) list = list.filter(l => relProdutos.has(l.produtoId));
+  list.sort((a,b) => a.data.localeCompare(b.data) || String(a.criadoEm).localeCompare(String(b.criadoEm)));
+  return { de, ate, list, grupos: agruparPorEmpresa(list), multi: produtosDistintos(list) > 1, rotulo: rotuloQtd(list), opts: { ...relPrefs } };
+}
+
+function colunasDetalhe(r, comEmpresa) {
+  const o = r.opts;
+  const c = [{ t:'Data', w:20, v: l => fmtDate(l.data) }];
+  if (comEmpresa) c.push({ t:'Empresa', w:38, v: l => nomeDe(l) });
+  if (r.multi) c.push({ t:'Produto', w:26, v: l => prodDe(l).nome });
+  c.push({ t: r.multi ? 'Qtd' : r.rotulo, w:14, al:'center', v: l => String(l.qtd) });
+  if (o.unit) c.push({ t:'Valor unit.', w:22, al:'right', v: l => 'R$ ' + fmtVal(l.valorUnit) });
+  c.push({ t:'Total', w:24, al:'right', bold:true, v: l => 'R$ ' + fmtVal(l.total) });
+  if (o.obs) c.push({ t:'Obs.', w:36, obs:true, v: l => l.obs || '' });
+  return c;
+}
+
+function linhasResumoEmpresa(r) {
+  const g = new Map();
+  r.list.forEach(l => {
+    const k = r.multi ? l.empresaId + '|' + l.produtoId : l.empresaId;
+    if (!g.has(k)) g.set(k, { empresa: nomeDe(l), produto: prodDe(l).nome, qtd: 0, total: 0 });
+    const x = g.get(k); x.qtd += Number(l.qtd); x.total += Number(l.total);
+  });
+  return [...g.values()].map(x => ({ ...x, media: x.qtd ? x.total / x.qtd : 0 }))
+    .sort((a,b) => a.empresa.localeCompare(b.empresa) || a.produto.localeCompare(b.produto));
+}
+
+function colunasResumoEmpresa(r) {
+  const c = [{ t:'Empresa', w:44, v: x => x.empresa }];
+  if (r.multi) c.push({ t:'Produto', w:26, v: x => x.produto });
+  c.push({ t: r.multi ? 'Qtd' : r.rotulo, w:14, al:'center', v: x => String(x.qtd) });
+  c.push({ t:'Valor médio', w:22, al:'right', v: x => 'R$ ' + fmtVal(x.media) });
+  c.push({ t:'Total', w:24, al:'right', bold:true, v: x => 'R$ ' + fmtVal(x.total) });
+  return c;
+}
+
+function linhasResumoProduto(list) {
+  const g = new Map();
+  list.forEach(l => {
+    const p = prodDe(l);
+    if (!g.has(p.id)) g.set(p.id, { nome: p.nome, qtd: 0, total: 0 });
+    const x = g.get(p.id); x.qtd += Number(l.qtd); x.total += Number(l.total);
+  });
+  return [...g.values()].map(x => ({ ...x, media: x.qtd ? x.total / x.qtd : 0 })).sort((a,b) => b.total - a.total);
+}
+
+const COLS_PRODUTO = [
+  { t:'Produto', w:50, v: x => x.nome },
+  { t:'Qtd', w:14, al:'center', v: x => String(x.qtd) },
+  { t:'Valor médio', w:22, al:'right', v: x => 'R$ ' + fmtVal(x.media) },
+  { t:'Total', w:24, al:'right', bold:true, v: x => 'R$ ' + fmtVal(x.total) }
+];
+
+function tabelaHtml(cols, rows) {
+  const estilo = c => `text-align:${c.al || 'left'};${c.bold ? 'font-weight:600;' : ''}${c.obs ? 'color:var(--text3);font-size:12px;' : ''}`;
+  return `<div class="table-wrap"><table>
+    <thead><tr>${cols.map(c => `<th style="text-align:${c.al || 'left'}">${esc(c.t)}</th>`).join('')}</tr></thead>
+    <tbody>${rows.map(x => `<tr>${cols.map(c => `<td style="${estilo(c)}">${esc(c.v(x))}</td>`).join('')}</tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function htmlRelatorio(r) {
+  const o = r.opts;
+  const totalTxt = `<strong>${esc(resumoQtd(r.list))}</strong> • <strong>R$ ${fmtVal(soma(r.list,'total'))}</strong>`;
+  const resumoEmp = `<div class="card"><div class="card-title">Resumo por empresa</div>${tabelaHtml(colunasResumoEmpresa(r), linhasResumoEmpresa(r))}
+    <div class="subtotal">Total geral: ${totalTxt}</div></div>`;
+  const resumoProd = r.multi ? `<div class="card"><div class="card-title">Resumo por produto</div>${tabelaHtml(COLS_PRODUTO, linhasResumoProduto(r.list))}</div>` : '';
+  if (o.org === 'resumo') return resumoEmp + resumoProd;
+  let h = (r.grupos.length > 1 ? resumoEmp : '') + resumoProd;
+  if (o.org === 'data') {
+    h += `<div class="card"><div class="card-title">Entregas por data</div>${tabelaHtml(colunasDetalhe(r, r.grupos.length > 1), r.list)}
+      ${r.grupos.length === 1 ? `<div class="subtotal">Total: ${totalTxt}</div>` : ''}</div>`;
+  } else {
+    r.grupos.forEach(g => {
+      const emp = empresaPorId(g.id);
+      h += `<div class="card">
+        <div class="card-title" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">${esc(g.nome)}
+          <span style="font-size:12px;color:var(--text3);font-weight:400">${emp && emp.contato ? esc(emp.contato) : ''}</span></div>
+        ${tabelaHtml(colunasDetalhe(r, false), g.itens)}
+        <div class="subtotal">Subtotal: <strong>${esc(g.qtdTxt)}</strong> • <strong>R$ ${fmtVal(g.total)}</strong></div>
+      </div>`;
+    });
+  }
+  return h;
+}
+
+function gerarRelatorio(silencioso = false) {
+  salvarRelPrefs();
+  const r = dadosRelatorio();
+  if (!r.de || !r.ate) { toast('Selecione o período', 'err'); return; }
+  if (r.de > r.ate) { toast('A data de início está depois da data fim', 'err'); return; }
+  const res = byId('r-resultado');
+  if (!r.list.length) {
+    res.style.display = 'none';
+    if (!silencioso) toast('Nenhuma entrega com esses filtros', 'err');
+    return;
+  }
+  res.style.display = 'block';
+  byId('r-cafes').textContent = soma(r.list, 'qtd');
+  byId('r-cafes-label').textContent = r.multi ? resumoQtd(r.list) : `${r.rotulo} entregues`;
+  byId('r-dias').textContent = new Set(r.list.map(l => l.data)).size;
+  byId('r-receita').textContent = 'R$ ' + fmtVal(soma(r.list, 'total'));
+  byId('r-conteudo').innerHTML = htmlRelatorio(r);
+  byId('r-chart-card').style.display = r.opts.grafico ? 'block' : 'none';
+  byId('r-chart-title').textContent = r.multi ? 'Itens entregues por dia' : `${r.rotulo} por dia`;
+  if (r.opts.grafico) {
+    const porDia = {};
+    r.list.forEach(l => { porDia[l.data] = (porDia[l.data] || 0) + Number(l.qtd); });
+    const ds = Object.keys(porDia).sort();
+    drawChart('r-chart', 'bar', ds.map(fmtDateCurta), ds.map(d => porDia[d]), 'Quantidade', '#5c3d2e');
+  }
+  byId('btn-pdf-separado').style.display = r.grupos.length > 1 ? 'inline-flex' : 'none';
+  if (!silencioso && res.scrollIntoView) res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── PDF ──
+function graficoImagem(list) {
+  if (typeof Chart === 'undefined') return null;
+  const porDia = {};
+  list.forEach(l => { porDia[l.data] = (porDia[l.data] || 0) + Number(l.qtd); });
+  const ds = Object.keys(porDia).sort();
+  const cv = document.createElement('canvas');
+  cv.width = 1000; cv.height = 350;
+  cv.style.cssText = 'position:fixed;left:-9999px;top:0';
+  document.body.appendChild(cv);
+  try {
+    const ch = new Chart(cv.getContext('2d'), {
+      type: 'bar',
+      data: { labels: ds.map(fmtDateCurta), datasets: [{ data: ds.map(d => porDia[d]), backgroundColor: '#8b6347', borderRadius: 4 }] },
+      options: { responsive: false, animation: false, devicePixelRatio: 1, plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0, font: { size: 16 } } }, x: { grid: { display: false }, ticks: { font: { size: 16 } } } } }
+    });
+    const url = cv.toDataURL('image/png');
+    ch.destroy();
+    return url;
+  } catch(e) { return null; }
+  finally { cv.remove(); }
+}
+
+function montarPDF(r) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const W = doc.internal.pageSize.getWidth(), M = 14, UW = W - 2 * M;
+  const o = r.opts;
+  let y;
+
+  const quebra = need => { if (y + need > 282) { doc.addPage(); y = 20; } };
+  const secao = t => { quebra(24); doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(92,61,46); doc.text(t, M, y); y += 5; };
+  const cortar = (t, max) => {
+    t = String(t);
+    if (doc.getTextWidth(t) <= max) return t;
+    while (t.length && doc.getTextWidth(t + '...') > max) t = t.slice(0, -1);
+    return t + '...';
+  };
+  const tabela = (cols, rows) => {
+    const tw = cols.reduce((s, c) => s + c.w, 0);
+    let x = M; const pos = cols.map(c => { const p = { x, w: c.w / tw * UW }; x += p.w; return p; });
+    const celula = (s, i, al) => {
+      const { x, w } = pos[i], pad = 3, t = cortar(s, w - 2 * pad);
+      if (al === 'right') doc.text(t, x + w - pad, y + 5.5, { align: 'right' });
+      else if (al === 'center') doc.text(t, x + w / 2, y + 5.5, { align: 'center' });
+      else doc.text(t, x + pad, y + 5.5);
+    };
+    const cabecalho = () => {
+      doc.setFillColor(92,61,46); doc.rect(M, y, UW, 8, 'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(9); doc.setFont('helvetica','bold');
+      cols.forEach((c, i) => celula(c.t, i, c.al));
+      y += 8;
+    };
+    cabecalho();
+    rows.forEach((row, i) => {
+      if (y > 276) { doc.addPage(); y = 20; cabecalho(); }
+      if (i % 2 === 0) { doc.setFillColor(247,245,240); doc.rect(M, y, UW, 8, 'F'); }
+      doc.setFontSize(9);
+      cols.forEach((c, ci) => {
+        doc.setFont('helvetica', c.bold ? 'bold' : 'normal');
+        if (c.obs) doc.setTextColor(130,110,100); else doc.setTextColor(30,20,16);
+        celula(c.v(row), ci, c.al);
+      });
+      y += 8;
+    });
+  };
+  const linhaTotal = txt => {
+    quebra(10);
+    doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(92,61,46);
+    doc.text(cortar(txt, UW), W - M, y + 5, { align: 'right' });
+    y += 12;
+  };
+
+  const unica = r.grupos.length === 1 ? r.grupos[0] : null;
+  const empUnica = unica ? empresaPorId(unica.id) : null;
+  doc.setFillColor(92,61,46); doc.rect(0, 0, W, 42, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold'); doc.setFontSize(16);
+  doc.text('Relatório de entregas - Café da Manhã', M, 15);
+  doc.setFontSize(12);
+  doc.text(cortar(unica ? unica.nome : `${r.grupos.length} empresas`, UW * 0.6), M, 25);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  if (empUnica && empUnica.contato) doc.text(cortar('A/C: ' + empUnica.contato, UW * 0.4), W - M, 25, { align: 'right' });
+  doc.text(`Período: ${fmtDate(r.de)} a ${fmtDate(r.ate)}`, M, 35);
+  doc.text(`Emitido em ${fmtDate(hoje())}`, W - M, 35, { align: 'right' });
+  y = 52;
+
+  doc.setFillColor(247,245,240); doc.roundedRect(M, y, UW, 26, 3, 3, 'F');
+  doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(92,61,46);
+  doc.text(String(soma(r.list,'qtd')), M + 16, y + 11);
+  doc.text(String(new Set(r.list.map(l => l.data)).size), W / 2, y + 11, { align:'center' });
+  doc.text('R$ ' + fmtVal(soma(r.list,'total')), W - M - 16, y + 11, { align:'right' });
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(120,100,90);
+  doc.text(r.multi ? 'Itens entregues' : `${r.rotulo} entregues`, M + 16, y + 19);
+  doc.text('Dias com entrega', W / 2, y + 19, { align:'center' });
+  doc.text('Valor total', W - M - 16, y + 19, { align:'right' });
+  y += 32;
+  if (r.multi) {
+    doc.setFontSize(10); doc.setTextColor(92,61,46);
+    doc.text(cortar('Itens: ' + resumoQtd(r.list), UW), M, y + 2);
+    y += 8;
+  }
+  y += 4;
+
+  const totalGeral = `${resumoQtd(r.list)}  |  R$ ${fmtVal(soma(r.list,'total'))}`;
+  if (o.org === 'resumo' || r.grupos.length > 1) {
+    secao('Resumo por empresa');
+    tabela(colunasResumoEmpresa(r), linhasResumoEmpresa(r));
+    linhaTotal('Total geral: ' + totalGeral);
+  }
+  if (r.multi) {
+    secao('Resumo por produto');
+    tabela(COLS_PRODUTO, linhasResumoProduto(r.list));
+    y += 6;
+  }
+  if (o.org === 'data') {
+    secao('Entregas por data');
+    tabela(colunasDetalhe(r, r.grupos.length > 1), r.list);
+    if (r.grupos.length === 1) linhaTotal('Total: ' + totalGeral); else y += 6;
+  } else if (o.org === 'empresa') {
+    r.grupos.forEach(g => {
+      secao(r.grupos.length > 1 ? g.nome : 'Entregas');
+      tabela(colunasDetalhe(r, false), g.itens);
+      linhaTotal(`Subtotal: ${g.qtdTxt}  |  R$ ${fmtVal(g.total)}`);
+    });
+  }
+
+  if (o.grafico) {
+    const img = graficoImagem(r.list);
+    if (img) {
+      const h = UW * 0.35;
+      quebra(h + 12); secao(r.multi ? 'Itens entregues por dia' : `${r.rotulo} por dia`);
+      doc.addImage(img, 'PNG', M, y, UW, h);
+      y += h + 8;
+    }
+  }
+
+  if (o.rodape) {
+    doc.setFont('helvetica','normal'); doc.setFontSize(10);
+    const linhas = doc.splitTextToSize(o.rodape, UW - 12);
+    const h = linhas.length * 5 + 8;
+    quebra(h + 4);
+    doc.setFillColor(240,228,207); doc.roundedRect(M, y, UW, h, 3, 3, 'F');
+    doc.setTextColor(92,61,46); doc.text(linhas, M + 6, y + 7);
+    y += h + 4;
+  }
+
+  const pages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pages; i++) {
+    doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(160,144,128);
+    doc.text(`Página ${i} de ${pages}`, W / 2, 291, { align:'center' });
+  }
+  return doc;
+}
+
+function slug(s) {
+  return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'empresa';
+}
+
+function prontoParaPDF() {
+  if (!window.jspdf) { toast('O gerador de PDF não carregou — verifique a internet e atualize a página', 'err'); return false; }
+  salvarRelPrefs();
+  return true;
+}
+
+function exportarPDF() {
+  if (!prontoParaPDF()) return;
+  const r = dadosRelatorio();
+  if (!r.list.length) { toast('Nenhuma entrega com esses filtros', 'err'); return; }
+  const nome = r.grupos.length === 1 ? slug(r.grupos[0].nome) : 'todas-empresas';
+  montarPDF(r).save(`relatorio-${nome}-${r.de}-a-${r.ate}.pdf`);
+  toast('PDF baixado ✓', 'ok');
+}
+
+async function exportarPDFsSeparados() {
+  if (!prontoParaPDF()) return;
+  const grupos = dadosRelatorio().grupos;
+  if (!grupos.length) { toast('Nenhuma entrega com esses filtros', 'err'); return; }
+  toast(`Gerando ${grupos.length} PDFs...`, 'ok');
+  for (const g of grupos) {
+    const r = dadosRelatorio(g.id);
+    montarPDF(r).save(`relatorio-${slug(g.nome)}-${r.de}-a-${r.ate}.pdf`);
+    await new Promise(res => setTimeout(res, 500));
+  }
+  toast(`${grupos.length} PDFs baixados ✓`, 'ok');
+}
+
+function textoWhatsApp(r) {
+  const o = r.opts, dm = d => fmtDateCurta(d);
+  const obs = l => (o.obs && l.obs) ? ` (${l.obs})` : '';
+  const item = l => qtdTexto(l.qtd, prodDe(l));
+  let t = `☕ *Relatório de entregas*\n📅 ${fmtDate(r.de)} a ${fmtDate(r.ate)}\n`;
+  if (r.grupos.length === 1) t += `🏢 ${r.grupos[0].nome}\n`;
+  t += '\n';
+  if (o.org === 'resumo') {
+    r.grupos.forEach(g => { t += `🏢 *${g.nome}*: ${g.qtdTxt} — R$ ${fmtVal(g.total)}\n`; });
+  } else if (o.org === 'data') {
+    r.list.forEach(l => {
+      t += `• ${dm(l.data)}${r.grupos.length > 1 ? ' — ' + nomeDe(l) : ''} — ${item(l)} — R$ ${fmtVal(l.total)}${obs(l)}\n`;
+    });
+  } else {
+    r.grupos.forEach(g => {
+      if (r.grupos.length > 1) t += `🏢 *${g.nome}*\n`;
+      g.itens.forEach(l => { t += `• ${dm(l.data)} — ${item(l)} — R$ ${fmtVal(l.total)}${obs(l)}\n`; });
+      if (r.grupos.length > 1) t += `Subtotal: ${g.qtdTxt} — R$ ${fmtVal(g.total)}\n\n`;
+    });
+  }
+  t += `\n*Total: ${resumoQtd(r.list)} — R$ ${fmtVal(soma(r.list,'total'))}*`;
+  if (o.rodape) t += `\n\n${o.rodape}`;
+  return t;
+}
+
+function compartilhar() {
+  salvarRelPrefs();
+  const r = dadosRelatorio();
+  if (!r.list.length) { toast('Nenhuma entrega com esses filtros', 'err'); return; }
+  const txt = textoWhatsApp(r);
+  if (navigator.share) navigator.share({ title: 'Relatório de entregas', text: txt }).catch(() => {});
+  else window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+}
+
+// ═══════════════════════════════════
+// USUÁRIOS
+// ═══════════════════════════════════
+function addUsuario() {
+  const user = byId('cfg-user').value.trim().toLowerCase();
+  const pass = byId('cfg-pass').value;
+  if (!user || !pass) { toast('Informe usuário e senha', 'err'); return; }
+  const existente = db.usuarios.find(u => String(u.user).toLowerCase() === user);
+  if (existente) {
+    if (!confirm(`O usuário "${user}" já existe. Trocar a senha dele?`)) return;
+    existente.pass = pass; salvar(); enviar('saveUsuario', existente);
+    toast('Senha alterada ✓', 'ok');
+  } else {
+    const u = { user, pass, nome: user };
+    db.usuarios.push(u); salvar(); enviar('saveUsuario', u);
+    toast('Usuário adicionado ✓', 'ok');
+  }
+  byId('cfg-user').value = ''; byId('cfg-pass').value = '';
+  renderUsuarios();
+}
+
+function removerUsuario(user) {
+  if (currentUser && user === currentUser.user) { toast('Não dá para remover o usuário que está usando o app', 'err'); return; }
+  if (!confirm(`Remover o usuário "${user}"?`)) return;
+  db.usuarios = db.usuarios.filter(u => String(u.user) !== String(user));
+  salvar(); enviar('deleteUsuario', { user });
+  renderUsuarios();
+}
+
+function renderUsuarios() {
+  byId('cfg-users').innerHTML = db.usuarios.map(u => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:13px"><strong>${esc(u.nome || u.user)}</strong> <span style="color:var(--text3)">@${esc(u.user)}</span>${currentUser && u.user === currentUser.user ? ' <span style="font-size:10px;background:var(--cream2);color:var(--brown);padding:1px 8px;border-radius:10px">você</span>' : ''}</span>
+      ${currentUser && u.user !== currentUser.user ? `<button class="btn btn-danger btn-xs" onclick="removerUsuario('${esc(u.user)}')">✕</button>` : ''}
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════
+// CSV
+// ═══════════════════════════════════
+function exportarCSV() {
+  const h = 'data;empresa;produto;quantidade;valor_unit;total;obs;lancado_por\n';
+  const rows = [...db.lancamentos].sort((a,b) => a.data.localeCompare(b.data)).map(l =>
+    [fmtDate(l.data), nomeDe(l), prodDe(l).nome, l.qtd, fmtVal(l.valorUnit), fmtVal(l.total), l.obs || '', l.lancadoPor || '']
+      .map(v => `"${String(v).replace(/"/g,'""')}"`).join(';')
+  ).join('\n');
+  const blob = new Blob(['\ufeff' + h + rows], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `entregas-${hoje()}.csv`; a.click();
+  toast('Planilha exportada ✓', 'ok');
+}
+
+// ═══════════════════════════════════
+// UTILS
+// ═══════════════════════════════════
+function normData(v) {
+  const s = String(v || '').trim().replace(/^'/, '');
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+  const br = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (br) return `${br[3]}-${br[2]}-${br[1]}`;
+  const d = new Date(s);
+  if (!isNaN(d) && d.getFullYear() > 2000) return isoLocal(d);
+  return s;
+}
+function fmtVal(v) { return (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function fmtDate(d) { if (!d) return ''; const [y,m,day] = String(d).slice(0,10).split('-'); return day ? `${day}/${m}/${y}` : String(d); }
+function fmtDateCurta(d) { const [,m,day] = String(d).split('-'); return `${day}/${m}`; }
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(msg, type = 'ok') {
+  const el = byId('toast'); el.textContent = msg; el.className = `show ${type}`;
+  clearTimeout(window._tt); window._tt = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+// ═══════════════════════════════════
+// INÍCIO
+// ═══════════════════════════════════
+['editModal','empModal','prodModal','massModal'].forEach(id => {
+  byId(id).addEventListener('click', e => { if (e.target.id === id) fecharModal(id); });
+});
+window.addEventListener('online', () => esvaziarFila());
+setInterval(() => { if (currentUser && !document.hidden) loadFromSheets(false); }, 60000);
+
+(function boot() {
+  const s = localStorage.getItem(SESSAO_KEY);
+  const u = s && db.usuarios.find(x => String(x.user) === s);
+  if (u) entrar(u);
+  loadFromSheets(false);
+})();
+
+</script>
+</body>
+</html>
